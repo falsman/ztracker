@@ -1,0 +1,172 @@
+//
+//  HabitsView 2.swift
+//  zTracker
+//
+//  Created by Jia Sahar on 12/17/25.
+//
+
+import SwiftUI
+import SwiftData
+
+struct HabitsView: View {
+    @EnvironmentObject private var appState: AppState
+    @Environment(\.modelContext) private var modelContext
+    @Query private var activeHabits: [Habit]
+    @Query private var archivedHabits: [Habit]
+    
+    @State private var showingArchive = false
+    @State private var selectedHabit: Habit?
+    @State private var showingDeleteAlert = false
+    @State private var habitToDelete: Habit?
+    
+    var body: some View {
+        NavigationSplitView {
+            listContent
+        } detail: {
+            detailContent
+        }
+//        .sheet(isPresented: $showingArchive) { ArchiveView(selection: selectedHabit) }
+    }
+    
+    private var listContent: some View {
+        List(selection: $selectedHabit) {
+            activeHabitsSection
+            
+            if !activeHabits.isEmpty {
+                archivedSection
+            }
+        }
+        .navigationTitle("Habits")
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button(action: { appState.showingNewHabit = true }) {
+                    Label("Add Habit", systemImage: "plus")
+                }
+                .buttonStyle(.glass)
+            }
+        }
+        .alert("Delete Habit", isPresented: $showingDeleteAlert, presenting: habitToDelete) { habit in
+            Button("Cancel", role: .cancel) { habitToDelete = nil }
+            Button("Delete", role: .destructive) {
+                Task { await StorageManager.shared.deleteHabit(habit)}
+            }
+        } message: { habit in
+            Text("Are you sure you want to delete '\(habit.title)'? This will also delete all of its history")
+        }
+    }
+    
+    private var activeHabitsSection: some View {
+        Section("Active Habits") {
+            ForEach(activeHabits) { habit in
+                HabitRow(habit: habit)
+                    .swipeActions(edge: .trailing) {
+                        trailingSwipeActions(for: habit)
+                    }
+                    .swipeActions(edge: .leading) {
+                        leadingSwipeActions(for: habit)
+                    }
+            }
+        }
+    }
+    
+    private var archivedSection: some View {
+        Section("Archived") {
+            Button { showingArchive = true } label: {
+                HStack {
+                    Text("View Archived Habits")
+                    Spacer()
+                    Text("\(archivedHabits.count)")
+                        .foregroundStyle(.secondary)
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .buttonStyle(.glass)
+        }
+    }
+    
+    @ViewBuilder
+    private func trailingSwipeActions(for habit: Habit) -> some View {
+        Button(role: .destructive) {
+            habitToDelete = habit
+            showingDeleteAlert = true
+        } label: {
+            Label("Delete", systemImage: "trash")
+        }
+        .buttonStyle(.glass)
+        .tint(.red)
+        
+        Button {
+            Task { await StorageManager.shared.toggleArchive(habit) }
+        } label: {
+            Label("Archive", systemImage: "archivebox")
+        }
+        .buttonStyle(.glass)
+        .tint(.orange)
+    }
+    
+    @ViewBuilder
+    private func leadingSwipeActions(for habit: Habit) -> some View {
+        Button {
+            appState.selectedHabit = habit
+            appState.showingNewHabit = true
+        } label: {
+            Label("Edit", systemImage: "pencil")
+        }
+        .buttonStyle(.glass)
+        .tint(.blue)
+    }
+    
+    private var detailContent: some View {
+        Group {
+            if let habit = selectedHabit {
+                HabitDetailView(habit: habit)
+            } else {
+                ContentUnavailableView(
+                    "Select a Habit",
+                    systemImage: "square.grid.2x2",
+                    description: Text("Choose a habit to view its deatails and history")
+                )
+            }
+        }
+    }
+}
+
+struct HabitRow: View {
+    let habit: Habit
+
+    var body: some View {
+        HStack {
+            if let icon = habit.icon {
+                Image(systemName: icon)
+                    .font(.title3)
+                    .foregroundStyle(Color(habit.color.color))
+                    .frame(width: 30, height: 30)
+                    .background(Color(habit.color.color).opacity(0.1))
+            }
+
+            VStack(alignment: .leading) {
+                Text(habit.title)
+                    .font(.headline)
+
+                Text(habit.type.displayName)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            VStack(alignment: .trailing) {
+                Text("\(habit.currentStreak())")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+
+                Text("days")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.vertical)
+    }
+}

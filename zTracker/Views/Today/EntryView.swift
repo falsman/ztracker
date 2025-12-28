@@ -26,7 +26,7 @@ struct EntryView: View {
                 if let time = entry.time {
                     HStack {
                         Image(systemName: "clock")
-                        Text(time.formatted(.time(pattern: .hourMinute)))
+                        Text("/(duration)")
                             .font(.subheadline)
                     }
                 }

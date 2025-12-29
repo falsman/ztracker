@@ -9,10 +9,15 @@ import Foundation
 import SwiftData
 import SwiftUI
 
-struct RGBValues: Codable {
-    let red: Double
-    let green: Double
-    let blue: Double
-    let opacity: Double
+struct RGBValues: Codable, Hashable {
+    var r: Double
+    var g: Double
+    var b: Double
+    var a: Double = 1.0
 }
 
+extension RGBValues {
+    var color: Color {
+        Color(.sRGB, red: r, green: g, blue: b, opacity: a)
+    }
+}

@@ -6,9 +6,12 @@
 //
 
 import SwiftUI
-import HealthKit
+internal import UniformTypeIdentifiers
+import SwiftData
 
 struct ExportView: View {
+    @Query(sort: \Habit.createdAt) private var habits: [Habit]
+
     @State private var exportFormat = "JSON"
     @State private var showingExporter = false
     @State private var exportData: Data?
@@ -25,15 +28,15 @@ struct ExportView: View {
             
             Section {
                 Button("Export All Data") { exportAllData() }
-                    .disabled(exportData == nil)
             }
         }
+        .glassEffect(in: .rect(cornerRadius: 16))
         .navigationTitle("Export Data")
         .fileExporter(
             isPresented: $showingExporter,
             document: ExportDocument(data: exportData ?? Data()),
             contentType: exportFormat == "JSON" ? .json : .commaSeparatedText,
-            defaultFilename: "zTracker_Export_\(Date().formatted(.iso8601))"
+            defaultFilename: "zTracker_Export_\(today.formatted(.iso8601))"
         ) { result in
             switch result {
             case .success: print("Export successful")
@@ -42,16 +45,17 @@ struct ExportView: View {
         }
     }
     
+        // TODO: doesn't export entries
     private func exportAllData() {
         Task {
-            let habits = await StorageManager.shared.fetchAllHabits()
-            let encoder = JSONEncoder()
-            
-            encoder.dateEncodingStrategy = .iso8601
-            encoder.outputFormatting = .prettyPrinted
-            
             do {
-                exportData = try encoder.encode(habits)
+                let encoder = JSONEncoder()
+                encoder.dateEncodingStrategy = .iso8601
+                encoder.outputFormatting = .prettyPrinted
+                
+                let exportStruct = habits.map { HabitExport(from: $0) }
+                
+                exportData = try encoder.encode(exportStruct)
                 showingExporter = true
             } catch { print("Failed to encode data: \(error)") }
         }
@@ -70,3 +74,50 @@ struct ExportDocument: FileDocument {
         FileWrapper(regularFileWithContents: data)
     }
 }
+
+struct HabitExport: Codable {
+    let id: UUID
+    let title: String
+    let type: HabitType
+    let color: RGBValues
+    let icon: String?
+    let isArchived: Bool
+    let createdAt: Date
+    let reminder: Date?
+    let metadata: Data?
+    let entryIDs: [UUID]
+    
+    init(from habit: Habit) {
+        self.id = habit.id
+        self.title = habit.title
+        self.type = habit.type
+        self.color = habit.color
+        self.icon = habit.icon
+        self.isArchived = habit.isArchived
+        self.createdAt = habit.createdAt
+        self.reminder = habit.reminder
+        self.metadata = habit.metadata
+        self.entryIDs = habit.entries.map { $0.id }
+    }
+}
+
+
+#Preview("Empty State") {
+    ExportView()
+        .modelContainer(PreviewHelpers.previewContainer)
+        .environmentObject(AppState())
+}
+
+#Preview("With Sample Data") {
+        let container = PreviewHelpers.previewContainer
+        
+        let habits = PreviewHelpers.makeHabits()
+        habits.forEach { container.mainContext.insert($0) }
+        
+        try? container.mainContext.save()
+        
+        return ExportView()
+            .modelContainer(container)
+            .environmentObject(AppState())
+}
+

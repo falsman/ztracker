@@ -8,18 +8,18 @@
 import SwiftUI
 import HealthKit
 import SwiftData
+import UserNotifications
 
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     
     @AppStorage("healthKitEnabled") private var healthKitEnabled = false
-    @AppStorage("notificationsEnabled") private var notificationsEnabled = false
-    @AppStorage("syncFrequency") private var syncFrequency = 300
     @AppStorage("themeMode") private var themeMode: ThemeMode = .system
     // TODO: attach themeColor to AppStorage
-    @State private var themeColor = Color(.teal)
+    @State private var themeColor = Color(.sRGB, red: 0.93, green: 0.38, blue: 0.65)
     
+    @State private var notificationsEnabled = false
     @State private var showingHealthKitAlert = false
     @State private var healthKitStatus = HKHealthStore().authorizationStatus(for: HKObjectType.categoryType(forIdentifier: .sleepAnalysis)!)
     
@@ -27,13 +27,6 @@ struct SettingsView: View {
         case system = "System"
         case light = "Light"
         case dark = "Dark"
-    }
-    
-    enum SyncFrequencies: Int, CaseIterable {
-        case fiveMinutes = 300
-        case fifteenMinutes = 900
-        case thirtyMinutes = 1800
-        case oneHour = 3600
     }
         
     var body: some View {
@@ -52,50 +45,33 @@ struct SettingsView: View {
                     }
                 }
                 
+                #if os(iOS)
                 Section("HealthKit Integration") {
                     Toggle("Enable HealthKit", isOn: $healthKitEnabled)
-                        .onChange(of: healthKitEnabled) { oldValue, newValue in
-                            if newValue { requestHealthKitAccess() }
-                        }
-                    if healthKitEnabled {
-                        VStack(alignment: .leading) {
-                            Label("Sleep Analysis", systemImage: "bed.double")
-                                .foregroundStyle(.blue)
-                            Text("Automatically import sleep data from Health")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        
-                        VStack(alignment: .leading) {
-                            Label("Mindfulness", systemImage: "brain.head.profile")
-                                .foregroundStyle(.purple)
-                            Text("Import mindfulness minutes from Health")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
+                        .onChange(of: healthKitEnabled) {
+                            guard healthKitEnabled else { return }
+                            Task { do {
+                                try await HealthKitManager.shared.requestAuthorization()
+                            } catch { print("HealthKit Authorization Failed: \(error)") }
+                            }}
                 }
+                #endif
                 
+                // TODO: reminders!
                 Section("Notifications") {
-                    Toggle("Daily Reminders", isOn: $notificationsEnabled)
-                    
-                    if notificationsEnabled {
-                        DatePicker("Reminder Time", selection: .constant(Date()), displayedComponents: .hourAndMinute)
-                    }
+                    Toggle("Reminders", isOn: $notificationsEnabled)
+                        .onChange(of: notificationsEnabled) {
+                            Task {
+                                if notificationsEnabled {
+                                    let granted = try? await UNUserNotificationCenter.current()
+                                        .requestAuthorization(options: [.alert, .sound, .badge])
+                                    if granted != true { notificationsEnabled = false }
+                                } else {
+                                    UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
+                                }
+                            }
+                        }
                 }
-                
-                
-//                Section("Sync") {
-//                    Picker("Sync Frequency", selection: $syncFrequency) {
-//                        ForEach(SyncFrequencies.allCases, id: \.self) { seconds in
-//                            Text(seconds.rawValue).tag(seconds)
-//                        }
-//                    }
-//                    Button("Force Sync Now") {
-//                        Task { await StorageManager.shared.forceSync() }
-//                    }
-//                    .buttonStyle(.glass)
-//                }
                 
                 Section("Data") {
                     NavigationLink("Export Data") { ExportView() }
@@ -123,17 +99,36 @@ struct SettingsView: View {
                         .buttonStyle(.glass)
                 }
             }
-            .glassEffect(in: .rect(cornerRadius: 16))
             .navigationTitle("Settings")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
-                        .buttonStyle(.glass)
-                }
+        }
+        .onAppear {
+            Task {
+                let settings = await UNUserNotificationCenter.current().notificationSettings()
+                notificationsEnabled = settings.authorizationStatus == .authorized
             }
         }
     }
 }
+
+#Preview("Empty State") {
+    SettingsView()
+        .modelContainer(PreviewHelpers.previewContainer)
+        .environmentObject(AppState())
+}
+
+#Preview("With Sample Data") {
+        let container = PreviewHelpers.previewContainer
+        
+        let habits = PreviewHelpers.makeHabits()
+        habits.forEach { container.mainContext.insert($0) }
+        
+        try? container.mainContext.save()
+        
+        return SettingsView()
+            .modelContainer(container)
+            .environmentObject(AppState())
+}
+

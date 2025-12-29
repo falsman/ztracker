@@ -1,25 +1,14 @@
 //
-//  ContentView 2.swift
+//  ContentView.swift
 //  zTracker
 //
 //  Created by Jia Sahar on 12/17/25.
 //
 
 import SwiftUI
+import SwiftData
 
 struct ContentView: View {
-    @EnvironmentObject private var appState: AppState
-    
-    var body: some View {
-//        #if os(iOS)
-        iOSContentView()
-//        #elseif os(macOS)
-//        macOSContentView()
-//        #endif
-    }
-}
-
-private struct iOSContentView: View {
     @EnvironmentObject private var appState: AppState
     
     var body: some View {
@@ -32,6 +21,26 @@ private struct iOSContentView: View {
         
     }
 }
+
+#Preview("Empty State") {
+    ContentView()
+        .modelContainer(PreviewHelpers.previewContainer)
+        .environmentObject(AppState())
+}
+
+#Preview("With Sample Data") {
+        let container = PreviewHelpers.previewContainer
+        
+        let habits = PreviewHelpers.makeHabits()
+        habits.forEach { container.mainContext.insert($0) }
+        
+        try? container.mainContext.save()
+        
+        return ContentView()
+            .modelContainer(container)
+            .environmentObject(AppState())
+}
+
 
 //private struct macOSContentView: View {
 //    @EnvironmentObject private var appState: AppState

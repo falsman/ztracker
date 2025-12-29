@@ -7,12 +7,17 @@
 
 import SwiftUI
 import SwiftData
+import UserNotifications
 
 struct HabitsView: View {
     @EnvironmentObject private var appState: AppState
     @Environment(\.modelContext) private var modelContext
-    @Query private var activeHabits: [Habit]
-    @Query private var archivedHabits: [Habit]
+    
+    @Query(filter: #Predicate<Habit> { !$0.isArchived })
+    private var activeHabits: [Habit]
+    
+    @Query(filter: #Predicate<Habit> { $0.isArchived })
+    private var archivedHabits: [Habit]
     
     @State private var showingArchive = false
     @State private var selectedHabit: Habit?
@@ -25,7 +30,7 @@ struct HabitsView: View {
         } detail: {
             detailContent
         }
-//        .sheet(isPresented: $showingArchive) { ArchiveView(selection: selectedHabit) }
+//        .sheet(isPresented: $showingArchive) { ArchiveView(selection: $selectedHabit) }
     }
     
     private var listContent: some View {
@@ -39,16 +44,19 @@ struct HabitsView: View {
         .navigationTitle("Habits")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button(action: { appState.showingNewHabit = true }) {
+                Button(action: { appState.showingHabitEditor = true }) {
                     Label("Add Habit", systemImage: "plus")
                 }
-                .buttonStyle(.glass)
             }
         }
+        .sheet(isPresented: $appState.showingHabitEditor) { HabitEditorView() }
+        
         .alert("Delete Habit", isPresented: $showingDeleteAlert, presenting: habitToDelete) { habit in
             Button("Cancel", role: .cancel) { habitToDelete = nil }
             Button("Delete", role: .destructive) {
-                Task { await StorageManager.shared.deleteHabit(habit)}
+                modelContext.delete(habit)
+                UNUserNotificationCenter.current()
+                    .removePendingNotificationRequests(withIdentifiers: [habit.id.uuidString])
             }
         } message: { habit in
             Text("Are you sure you want to delete '\(habit.title)'? This will also delete all of its history")
@@ -82,7 +90,6 @@ struct HabitsView: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            .buttonStyle(.glass)
         }
     }
     
@@ -98,7 +105,7 @@ struct HabitsView: View {
         .tint(.red)
         
         Button {
-            Task { await StorageManager.shared.toggleArchive(habit) }
+            Task { habit.isArchived.toggle() }
         } label: {
             Label("Archive", systemImage: "archivebox")
         }
@@ -110,7 +117,7 @@ struct HabitsView: View {
     private func leadingSwipeActions(for habit: Habit) -> some View {
         Button {
             appState.selectedHabit = habit
-            appState.showingNewHabit = true
+            appState.showingHabitEditor = true
         } label: {
             Label("Edit", systemImage: "pencil")
         }
@@ -137,36 +144,58 @@ struct HabitRow: View {
     let habit: Habit
 
     var body: some View {
-        HStack {
-            if let icon = habit.icon {
-                Image(systemName: icon)
-                    .font(.title3)
-                    .foregroundStyle(Color(habit.color.color))
-                    .frame(width: 30, height: 30)
-                    .background(Color(habit.color.color).opacity(0.1))
+        NavigationLink {
+            HabitDetailView(habit: habit)
+        } label: {
+            HStack {
+                if let icon = habit.icon {
+                    Image(systemName: icon)
+                        .font(.title3)
+                        .foregroundStyle(Color(habit.color.color))
+                        .frame(width: 30, height: 30)
+                }
+                
+                VStack(alignment: .leading) {
+                    Text(habit.title)
+                        .font(.headline)
+                    
+                    Text(habit.type.displayName)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                
+                Spacer()
+                
+                VStack(alignment: .trailing) {
+                    Text("\(habit.currentStreak())")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                    
+                    Text("days")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
-
-            VStack(alignment: .leading) {
-                Text(habit.title)
-                    .font(.headline)
-
-                Text(habit.type.displayName)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer()
-
-            VStack(alignment: .trailing) {
-                Text("\(habit.currentStreak())")
-                    .font(.headline)
-                    .fontWeight(.semibold)
-
-                Text("days")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
+            .padding(.vertical)
         }
-        .padding(.vertical)
     }
+}
+
+#Preview("Empty State") {
+    HabitsView()
+        .modelContainer(PreviewHelpers.previewContainer)
+        .environmentObject(AppState())
+}
+
+#Preview("With Sample Data") {
+    let container = PreviewHelpers.previewContainer
+    
+    let habits = PreviewHelpers.makeHabits()
+    habits.forEach { container.mainContext.insert($0) }
+    
+    try? container.mainContext.save()
+    
+    return HabitsView()
+        .modelContainer(container)
+        .environmentObject(AppState())
 }

@@ -9,7 +9,8 @@ import SwiftUI
 import SwiftData
 
 struct InsightsView: View {
-    @Query private var activeHabits: [Habit]
+    @Query(filter: #Predicate<Habit> { !$0.isArchived })
+    private var activeHabits: [Habit]
     
     @State private var selectedTimeframe: Timeframe = .week
     @State private var selectedHabit: Habit?
@@ -39,52 +40,77 @@ struct InsightsView: View {
                             Text(timeframe.rawValue).tag(timeframe)
                         }
                     }
-                    // .pickerStyle(.segmented)
+                     .pickerStyle(.segmented)
                     .padding(.horizontal)
                     
-                    CompletionRateCard(habits: activeHabits, days: selectedTimeframe.days)
+                    CompletionRateChart(habits: activeHabits, days: selectedTimeframe.days)
                         .padding(.horizontal)
-                    // .frame(height: 200)
+                        .frame(height: 200)
                     
                     VStack(alignment: .leading) {
                         Text("Habit Performance")
                             .font(.headline)
-                            .padding(.horizontal)
+                            .padding()
                         
                         ForEach(activeHabits) { habit in
                             HabitPerformanceRow(habit: habit, days: selectedTimeframe.days)
-                                .padding(.horizontal)
                         }
+                        .padding()
                     }
+                    .glassEffect(in: .rect(cornerRadius: 16))
+                    .padding()
+
                     
                     StreakLeaderboard()
-                    
-                    if !activeHabits.isEmpty {
-                        VStack(alignment: .leading) {
-                            Text("Current Streaks")
-                                .font(.headline)
-                                .padding(.horizontal)
-                            
-                            LazyVGrid(columns: [
-                                GridItem(.flexible()),
-                                GridItem(.flexible()),
-                                GridItem(.flexible())
-                            ]) {
-                                ForEach(activeHabits.sorted(by: { $0.currentStreak() > $1.currentStreak() })) { habit in
-                                    StreakCard(habit: habit)
-                                }
-                            }
-                            .padding(.horizontal)
-                        }
-                    }
-                    
-                    HabitDistributionChart()
-                    
+                        .padding()
+//                    if !activeHabits.isEmpty {
+//                        VStack(alignment: .leading) {
+//                            Text("Current Streaks")
+//                                .font(.headline)
+//                                .padding(.horizontal)
+//                            
+//                            LazyVGrid(columns: [
+//                                GridItem(.flexible()),
+//                                GridItem(.flexible()),
+//                                GridItem(.flexible())
+//                            ]) {
+//                                ForEach(activeHabits.sorted(by: { $0.currentStreak() > $1.currentStreak() })) { habit in
+//                                    StreakCard(habit: habit)
+//                                }
+//                            }
+//                            .padding(.horizontal)
+//                        }
+//                    }
+//                    CompletionRateCard()
+//                        .padding()
+//                    
+//                    
                 }
                 .padding(.vertical)
             }
             .navigationTitle("Insights")
             // .backgroundExtensionEffect(isEnabled: true)
         }
+    }
+}
+
+#Preview("Empty State") {
+    InsightsView()
+        .modelContainer(PreviewHelpers.previewContainer)
+        .environmentObject(AppState())
+}
+
+#Preview("With Sample Data") {
+    NavigationStack {
+        let container = PreviewHelpers.previewContainer
+        
+        let habits = PreviewHelpers.makeHabits()
+        habits.forEach { container.mainContext.insert($0) }
+        
+        try? container.mainContext.save()
+        
+        return InsightsView()
+            .modelContainer(container)
+            .environmentObject(AppState())
     }
 }

@@ -22,31 +22,27 @@ struct EntryView: View {
                     Text(entry.completed == true ? "Completed" : "Not Completed")
                         .font(.subheadline)
                 }
-            case .hours:
-                if let time = entry.time {
+            case .duration:
+                if let duration = entry.time {
                     HStack {
                         Image(systemName: "clock")
-                        Text("/(duration)")
+                        Text(duration.formatted(.time(pattern: .hourMinute)))
                             .font(.subheadline)
                     }
                 }
                 
-            case .rating(let min, let max):
-                if let rating = entry.rating {
+            case .rating(_, let max):
+                if let rating = entry.ratValue {
                     HStack {
                         ForEach(1...max, id: \.self) { index in
                             Image(systemName: index <= rating ? "star.fill" : "star")
-                                .foregroundStyle(index <= rating ? .yellow : .secondary)
                                 .font(.caption)
                         }
-                        Text("\(rating)/\(max)")
-                            .font(.caption)
-                            .padding(.leading)
                     }
                 }
                 
-            case .numeric(let min, let max, let unit):
-                if let value = entry.value {
+            case .numeric(_, _, let unit):
+                if let value = entry.numValue {
                     HStack {
                         Image(systemName: "number")
                             .foregroundStyle(.purple)
@@ -64,4 +60,21 @@ struct EntryView: View {
             }
         }
     }
+}
+
+
+#Preview("With Sample Data") {
+    let container = PreviewHelpers.previewContainer
+    
+    let habits = PreviewHelpers.makeHabits()
+    habits.forEach { container.mainContext.insert($0) }
+    
+    try? container.mainContext.save()
+    
+    let habitToShow = habits[1]
+    let entryToShow = habitToShow.entries.first!
+    
+    return EntryView(habit: habitToShow, entry: entryToShow)
+        .modelContainer(container)
+        .environmentObject(AppState())
 }

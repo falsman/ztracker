@@ -6,16 +6,16 @@
 //
 
 
-enum HabitType: Codable {
+enum HabitType: Codable, Hashable {
     case boolean
-    case hours
+    case duration
     case rating(min: Int, max: Int)
     case numeric(min: Double, max: Double, unit: String)
     
     var displayName: String {
         switch self {
         case .boolean: return "Checkmark"
-        case .hours: return "Time"
+        case .duration: return "Time"
         case .rating: return "Rating"
         case .numeric: return "Number"
         }

@@ -14,7 +14,7 @@ final class Habit {
     @Attribute(.unique) var id: UUID
     var title: String
     var type: HabitType
-    var color: Color
+    var color: RGBValues
     var icon: String?
     var isArchived: Bool
     var createdAt: Date
@@ -28,10 +28,10 @@ final class Habit {
         id: UUID = UUID(),
         title: String,
         type: HabitType,
-        color: Color,
+        color: RGBValues,
         icon: String? = nil,
         isArchived: Bool = false,
-        createdAt: Date = Date(),
+        createdAt: Date = today,
         reminder: Date? = nil,
         metadata: Data? = nil
     ) {
@@ -46,10 +46,6 @@ final class Habit {
         self.metadata = metadata
     }
     
-    var isActive: Bool {
-        !isArchived
-    }
-    
     func entry(for date: Date) -> HabitEntry? {
         let calendar = Calendar.current
         let targetDay = calendar.startOfDay(for: date)
@@ -57,7 +53,7 @@ final class Habit {
         return entries.first { entry in calendar.startOfDay(for: entry.date) == targetDay }
     }
     
-    func createOrUpdateEntry(for date: Date = Date(), completed: Bool? = false, time: Duration? = nil, value: Double? = nil, rating: Int? = nil, note: String? = nil) -> HabitEntry {
+    func createOrUpdateEntry(for date: Date = today, completed: Bool? = false, time: Duration? = nil, numValue: Double? = nil, ratValue: Int? = nil, note: String? = nil) -> HabitEntry {
         let calendar = Calendar.current
         let targetDay = calendar.startOfDay(for: date)
         
@@ -66,20 +62,22 @@ final class Habit {
         }) {
             if let completed = completed { existingEntry.completed = completed }
             if let time = time { existingEntry.time = time }
-            if let rating = rating { existingEntry.rating = rating }
+            if let rating = ratValue { existingEntry.ratValue = rating }
+            if let numeric = numValue { existingEntry.numValue = numeric }
             if let note = note { existingEntry.note = note }
-            existingEntry.updatedAt = Date()
+            existingEntry.updatedAt = today
             return existingEntry
         } else {
             let newEntry = HabitEntry(
-                habit: self,
                 date: date,
                 completed: completed,
-                time: time,
-                value: value,
-                rating:rating,
-                note: note
+                ratValue: ratValue,
+                numValue: numValue,
+                note: note,
+                
+                habit: self
                 )
+            newEntry.time = time
             entries.append(newEntry)
             return newEntry
         }
@@ -87,7 +85,7 @@ final class Habit {
     
     func currentStreak() -> Int {
         let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
+        let today = calendar.startOfDay(for: today)
         var currentDate = today
         var streak = 0
         
@@ -96,9 +94,9 @@ final class Habit {
             
             switch type {
             case .boolean: if entry.completed != true { return streak }
-            case .hours: if entry.time == nil { return streak }
-            case .rating(min:_, max:_): if entry.value == nil { return streak }
-            case .numeric(min:_, max:_, unit: _): if entry.value == nil { return streak }
+            case .duration: if entry.time == nil { return streak }
+            case .rating(min:_, max:_): if entry.ratValue == nil { return streak }
+            case .numeric(min:_, max:_, unit: _): if entry.numValue == nil { return streak }
             }
             
             streak += 1
@@ -110,7 +108,7 @@ final class Habit {
     
     func completionRate(days: Int = 30) -> Double {
         let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
+        let today = calendar.startOfDay(for: today)
         var totalDays = 0
         var completedDays = 0
         
@@ -121,9 +119,9 @@ final class Habit {
             if let entry = entry(for: date) {
                 switch type {
                 case .boolean: if entry.completed == true { completedDays += 1 }
-                case .hours: if entry.time != nil { completedDays += 1 }
-                case .rating(min:_, max:_): if entry.rating != nil { completedDays += 1 }
-                case .numeric(min:_, max:_, unit: _): if entry.value != nil { completedDays += 1 }
+                case .duration: if entry.time != nil { completedDays += 1 }
+                case .rating(min:_, max:_): if entry.ratValue != nil { completedDays += 1 }
+                case .numeric(min:_, max:_, unit: _): if entry.numValue != nil { completedDays += 1 }
                 }
             }
         }

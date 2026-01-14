@@ -17,9 +17,7 @@ class HealthKitManager {
     
     private let healthStore = HKHealthStore()
     
-/// Requests authorization to read sleep analysis and mindful session data from HealthKit.
-    /// Exits immediately if HealthKit is not available on the device. On successful authorization, sets `healthKitEnabled` to `true`.
-    /// - Throws: An error if the HealthKit authorization request fails.
+private init() {}
     
     func requestAuthorization() async throws {
         print("Checking HK Authorization")

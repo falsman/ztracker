@@ -10,15 +10,21 @@ import SwiftData
 import Charts
 
 struct HabitDetailView: View {
-    @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var appState: AppState
+
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
     
     @State private var entries: [HabitEntry] = []
+    
+    @State private var showingHabitEditor = false
     
     @State private var showingDatePicker = false
     @State private var selectedDateForNewEntry = today
     @State private var entryToEdit: HabitEntry?
     @State private var dateToLog: Date?
+    
+    @State private var deleteEntryAlert = false
     
     let habit: Habit
     
@@ -50,7 +56,7 @@ struct HabitDetailView: View {
                             title: "Current Streak",
                             value: "\(habit.currentStreak())",
                             icon: "flame",
-                            color: .clear
+                            color: habit.color.color
                         )
                         StatCard(
                             title: "Completion Date",
@@ -68,8 +74,13 @@ struct HabitDetailView: View {
                     .padding(.horizontal)
                     
                     ChartSection()
+                        .glassEffect(in: .rect(cornerRadius: 16))
+                        .padding()
                     
                     RecentEntriesSection()
+                        .glassEffect(in: .rect(cornerRadius: 16))
+                        .padding()
+
                 }
             }
             
@@ -78,7 +89,7 @@ struct HabitDetailView: View {
                     Button("Log Entry", systemImage: "plus") { showingDatePicker = true }
                 }
                 ToolbarItem(placement: .secondaryAction) {
-                    Button("Edit Habit", systemImage: "slider.horizontal.3") { appState.showingHabitEditor = true }
+                    Button("Edit Habit", systemImage: "slider.horizontal.3") { showingHabitEditor = true }
                 }
             }
             .popover(isPresented: $showingDatePicker) {
@@ -89,13 +100,12 @@ struct HabitDetailView: View {
                 Button("Create Entry", role: .confirm) { showingDatePicker = false; dateToLog = selectedDateForNewEntry }
             }
             
-            .padding()
             
             .sheet(item: $dateToLog) { date in EntryEditorView(habit: habit, date: date) }
             
             .sheet(item: $entryToEdit) { entry in EntryEditorView(habit: habit, entry: entry) }
             
-            .sheet(isPresented: $appState.showingHabitEditor) { HabitEditorView(habit: habit) }
+            .sheet(isPresented: $showingHabitEditor) { HabitEditorView(habit: habit) }
             
             .task { loadEntries() }
             .onChange(of: habit.entries) { loadEntries() }
@@ -120,7 +130,7 @@ struct HabitDetailView: View {
         VStack(alignment: .leading) {
             Text("30 Day Progress")
                 .font(.headline)
-                .padding(.horizontal)
+                .padding()
             
             // TODO: zoom in charts
             Chart {
@@ -136,7 +146,6 @@ struct HabitDetailView: View {
                 AxisMarks(position: .leading)
             }
             .padding()
-            .glassEffect(in: .rect(cornerRadius: 16))
         }
     }
     
@@ -154,7 +163,7 @@ struct HabitDetailView: View {
         VStack(alignment: .leading) {
             Text("Recent Entries")
                 .font(.headline)
-                .padding(.horizontal)
+                .padding()
             
             if entries.isEmpty {
                 ContentUnavailableView(
@@ -166,8 +175,20 @@ struct HabitDetailView: View {
             } else {
                 ForEach(entries.prefix(10)) { entry in
                     EntryRow(habit: habit, entry:entry)
-                        .onTapGesture { entryToEdit = entry  }
+                        .onTapGesture { entryToEdit = entry }
                         .padding(Edge.Set.horizontal)
+                        .contextMenu {
+                            Button("Delete Entry") { deleteEntryAlert = true }
+                        }
+                        .alert("Delete Entry?", isPresented: $deleteEntryAlert) {
+                            Button("Delete", role: .destructive) {
+                                modelContext.delete(entry)
+                                deleteEntryAlert = false
+                            }
+                            Button("Cancel", role: .cancel) { deleteEntryAlert = false; dismiss() }
+                        } message: {
+                            Text("This action cannot be undone.")
+                        }
                 }
             }
         }
@@ -226,3 +247,4 @@ extension Date: @retroactive Identifiable {
             .environmentObject(AppState())
     }
 }
+

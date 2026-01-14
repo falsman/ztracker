@@ -19,10 +19,9 @@ struct HabitsView: View {
     @Query(filter: #Predicate<Habit> { $0.isArchived })
     private var archivedHabits: [Habit]
     
-    @State private var showingArchive = false
+    @State private var showingHabitEditor = false
+
     @State private var selectedHabit: Habit?
-    @State private var showingDeleteAlert = false
-    @State private var habitToDelete: Habit?
     
     var body: some View {
         NavigationSplitView {
@@ -30,48 +29,46 @@ struct HabitsView: View {
         } detail: {
             detailContent
         }
-//        .sheet(isPresented: $showingArchive) { ArchiveView(selection: $selectedHabit) }
     }
     
     private var listContent: some View {
         List(selection: $selectedHabit) {
             activeHabitsSection
             
-            if !activeHabits.isEmpty {
+            if !archivedHabits.isEmpty {
                 archivedSection
             }
+        }
+        .navigationDestination(for: Habit.self) { habit in
+            HabitDetailView(habit: habit)
         }
         .navigationTitle("Habits")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button(action: { appState.showingHabitEditor = true }) {
+                Button(action: { showingHabitEditor = true }) {
                     Label("Add Habit", systemImage: "plus")
                 }
             }
         }
-        .sheet(isPresented: $appState.showingHabitEditor) { HabitEditorView() }
-        
-        .alert("Delete Habit", isPresented: $showingDeleteAlert, presenting: habitToDelete) { habit in
-            Button("Cancel", role: .cancel) { habitToDelete = nil }
-            Button("Delete", role: .destructive) {
-                modelContext.delete(habit)
-                UNUserNotificationCenter.current()
-                    .removePendingNotificationRequests(withIdentifiers: [habit.id.uuidString])
-            }
-        } message: { habit in
-            Text("Are you sure you want to delete '\(habit.title)'? This will also delete all of its history")
-        }
+        .sheet(isPresented: $showingHabitEditor) { HabitEditorView() }
     }
     
     private var activeHabitsSection: some View {
         Section("Active Habits") {
             ForEach(activeHabits) { habit in
-                HabitRow(habit: habit)
+                NavigationLink(value: habit) {
+                    HabitRow(habit: habit)
+                }
                     .swipeActions(edge: .trailing) {
-                        trailingSwipeActions(for: habit)
+                        editHabit(for: habit)
                     }
                     .swipeActions(edge: .leading) {
-                        leadingSwipeActions(for: habit)
+                        archiveHabit(for: habit)
+                    }
+                    .contextMenu {
+                        editHabit(for: habit)
+                        Divider()
+                        archiveHabit(for: habit)
                     }
             }
         }
@@ -79,14 +76,11 @@ struct HabitsView: View {
     
     private var archivedSection: some View {
         Section("Archived") {
-            Button { showingArchive = true } label: {
+            NavigationLink { ArchiveView() } label: {
                 HStack {
                     Text("View Archived Habits")
                     Spacer()
                     Text("\(archivedHabits.count)")
-                        .foregroundStyle(.secondary)
-                    Image(systemName: "chevron.right")
-                        .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             }
@@ -94,16 +88,7 @@ struct HabitsView: View {
     }
     
     @ViewBuilder
-    private func trailingSwipeActions(for habit: Habit) -> some View {
-        Button(role: .destructive) {
-            habitToDelete = habit
-            showingDeleteAlert = true
-        } label: {
-            Label("Delete", systemImage: "trash")
-        }
-        .buttonStyle(.glass)
-        .tint(.red)
-        
+    private func archiveHabit(for habit: Habit) -> some View {
         Button {
             Task { habit.isArchived.toggle() }
         } label: {
@@ -114,10 +99,9 @@ struct HabitsView: View {
     }
     
     @ViewBuilder
-    private func leadingSwipeActions(for habit: Habit) -> some View {
+    private func editHabit(for habit: Habit) -> some View {
         Button {
-            appState.selectedHabit = habit
-            appState.showingHabitEditor = true
+            showingHabitEditor = true
         } label: {
             Label("Edit", systemImage: "pencil")
         }
@@ -144,9 +128,6 @@ struct HabitRow: View {
     let habit: Habit
 
     var body: some View {
-        NavigationLink {
-            HabitDetailView(habit: habit)
-        } label: {
             HStack {
                 if let icon = habit.icon {
                     Image(systemName: icon)
@@ -175,9 +156,9 @@ struct HabitRow: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+                .padding(.horizontal)
             }
             .padding(.vertical)
-        }
     }
 }
 

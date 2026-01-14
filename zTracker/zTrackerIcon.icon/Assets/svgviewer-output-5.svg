@@ -1,0 +1,68 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  
+  <!-- Transparent background for Apple icon composer -->
+  
+  <!-- Circular habit tracking rings with Z formed by progress arcs -->
+  <g transform="translate(100, 100)">
+    
+    <!-- Outer ring (background) -->
+    <circle cx="0" cy="0" r="50" 
+            stroke="white" 
+            stroke-width="2.5" 
+            fill="none"
+            opacity="0.25"/>
+    
+    <!-- Top arc of Z - upper right section of outer ring -->
+    <path d="M -49 -9 A 50 50 0 0 1 40 -30" 
+          stroke="white" 
+          stroke-width="2.5" 
+          stroke-linecap="round"
+          fill="none"
+          opacity="0.95"/>
+    
+    <!-- Middle ring (background) -->
+    <circle cx="0" cy="0" r="35" 
+            stroke="#white" 
+            stroke-width="2.5" 
+            fill="none"
+            opacity="0.25"/>
+    
+    <!-- Diagonal arc of Z - right to left of middle ring -->
+    <path d="M 33 -10 A 35 35 0 1 1 -35 5" 
+          stroke="white" 
+          stroke-width="2.5" 
+          stroke-linecap="round"
+          fill="none"
+          opacity="0.95"/>
+    
+    <!-- Inner ring (background) -->
+    <circle cx="0" cy="0" r="20" 
+            stroke="white" 
+            stroke-width="2.5" 
+            fill="none"
+            opacity="0.25"/>
+    
+    <!-- Bottom arc of Z - lower right section of inner ring -->
+    <path d="M -1 20 A 20 20 0 0 0 0 -20" 
+          stroke="white" 
+          stroke-width="2.5" 
+          stroke-linecap="round"
+          fill="none"
+          opacity="0.95"/>
+    
+    <!-- Central checkmark -->
+    <path d="M -6 -1 L -1 4 L 8 -6" 
+          stroke="white" 
+          stroke-width="2.5" 
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          fill="none"
+          opacity="0.9"/>
+    
+    <!-- Progress indicator dots -->
+    <circle cx="40" cy="-30" r="2.5" fill="white" opacity="0.9"/>
+    <circle cx="0" cy="-20" r="2.5" fill="white" opacity="0.9"/>
+    <circle cx="10" cy="35" r="2.5" fill="white" opacity="0.9"/>
+    
+  </g>
+</svg>

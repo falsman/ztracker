@@ -27,6 +27,10 @@ struct HabitEditorView: View {
     @State private var numericMax = 100.00
     @State private var numericUnit = "units"
     
+    @State private var navTitle = "New Habit"
+    @State private var showDeleteAlert = false
+
+    
     init(habit: Habit? = nil) { self.existingHabit = habit }
     
     var body: some View {
@@ -51,9 +55,9 @@ struct HabitEditorView: View {
                         Stepper("Minimum: \(numericMin, specifier: "%.2f")", value: $numericMin, in: 0...100)
                         Stepper("Maximum: \(numericMax, specifier: "%.2f")", value: $numericMax, in: 0...100)
                         TextField("Unit", text: $numericUnit)
-                        #if os(iOS)
+#if os(iOS)
                             .textInputAutocapitalization(.never)
-                        #endif
+#endif
                         
                     }
                 }
@@ -94,18 +98,41 @@ struct HabitEditorView: View {
                         set: { if !$0 { reminder = nil } else {
                             reminder = Calendar.current.date(bySettingHour: 20, minute: 0, second: 0, of: today)
                         }
-                    }))
+                        }))
                     
                     if reminder != nil {
                         DatePicker("Time", selection: Binding(
                             get: { reminder ?? today },
                             set: { reminder = $0 }
-                            ), displayedComponents: .hourAndMinute)
+                        ), displayedComponents: .hourAndMinute)
+                    }
+                }
+                if existingHabit != nil {
+                    let habit = existingHabit
+                    HStack {
+                        Button("Archive Habit", role: .destructive) {
+                            habit!.isArchived = true
+                        }
+                        .buttonStyle(.glass)
+                        
+                        Spacer()
+                        
+                        Button("Delete Habit", role: .destructive) {
+                            modelContext.delete(habit!)
+                        }
+                        .buttonStyle(.glassProminent)
+                        .alert("Delete Habit?", isPresented: $showDeleteAlert) {
+                            Button("Delete", role: .destructive) {
+                                modelContext.delete(habit!)
+                            }
+                            Button("Cancel", role: .cancel) {}
+                        } message: {
+                            Text("This action cannot be undone.")
                         }
                     }
                 }
-            .navigationTitle("New Habit")
-            .glassEffect(in: .rect(cornerRadius: 16))
+            }
+            .padding()
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
@@ -130,6 +157,7 @@ struct HabitEditorView: View {
         selectedColor = habit.color
         icon = habit.icon ?? ""
         reminder = habit.reminder
+        navTitle = "Edit Habit"
         
         switch habit.type {
         case .boolean: selectedType = .boolean
@@ -137,6 +165,7 @@ struct HabitEditorView: View {
         case .rating(let min, let max): ratingMin = min; ratingMax = max; selectedType = .rating(min: min, max: max)
         case .numeric(let min, let max, let unit): numericMin = min; numericMax = max; selectedType = .numeric(min: min, max: max, unit: unit)
         }
+        
     }
     
     @MainActor

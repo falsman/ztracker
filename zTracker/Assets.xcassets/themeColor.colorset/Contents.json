@@ -2,8 +2,8 @@
   "colors" : [
     {
       "color" : {
-        "platform" : "universal",
-        "reference" : "labelColor"
+        "platform" : "osx",
+        "reference" : "findHighlightColor"
       },
       "idiom" : "universal"
     },
@@ -15,7 +15,7 @@
         }
       ],
       "color" : {
-        "platform" : "universal",
+        "platform" : "osx",
         "reference" : "labelColor"
       },
       "idiom" : "universal"
@@ -28,7 +28,7 @@
         }
       ],
       "color" : {
-        "platform" : "universal",
+        "platform" : "osx",
         "reference" : "labelColor"
       },
       "idiom" : "universal"

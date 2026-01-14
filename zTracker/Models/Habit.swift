@@ -59,7 +59,7 @@ final class Habit {
         return entries.first { entry in Calendar.current.startOfDay(for: entry.date) == targetDay }
     }
     
-    func createOrUpdateEntry(for date: Date = today, completed: Bool? = false, time: Duration? = nil, numValue: Double? = nil, ratValue: Int? = nil, note: String? = nil, updatedAt: Date = .now) -> HabitEntry {
+    func createOrUpdateEntry(for date: Date = today, completed: Bool? = false, time: Duration? = nil, numValue: Double? = nil, ratValue: Int? = nil, note: String? = nil) -> HabitEntry {
         let calendar = Calendar.current
         let targetDay = calendar.startOfDay(for: date)
         

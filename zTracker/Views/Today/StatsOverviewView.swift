@@ -21,14 +21,15 @@ struct StatsOverviewView: View {
                 value: todayCompletionRate.formatted(.percent.precision(.fractionLength(0))),
                 icon: "ellipsis.calendar",
                 iconVariation: todayCompletionRate,
-                caption: ("\(Int(completedHabitCount)) / \(activeHabits.count)")
+                caption: ""
                 )
             .contentShape(.rect)
             .contextMenu {
-                Button("what") {}
+                Text("Current Progress: \(Int(completedHabitCount)) / \(activeHabits.count)")
             }
           preview: {
               VStack {
+                  //TODO: add info for today
               }
               .padding()
               .glassEffect(in: .rect(cornerRadius: 16))
@@ -39,11 +40,11 @@ struct StatsOverviewView: View {
                 value: activeHabits.count.description,
                 icon: "square.grid.2x2",
                 iconVariation: 1,
-                caption: "Active"
+                caption: ""
             )
             .contentShape(.rect)
             .contextMenu {
-                Button("what") {}
+                Text("# of Active Habits")
             }
           preview: {
               VStack(alignment: .leading) {
@@ -71,11 +72,11 @@ struct StatsOverviewView: View {
                 value: longestStreak().streakCount.description,
                 icon: "flame",
                 iconVariation: 1,
-                caption: "Longest: \(longestStreak().habit.title)"
+                caption: ""
             )
             .contentShape(.rect)
             .contextMenu {
-                Button("what") {}
+                Text("Longest: \(longestStreak().habit.title)")
             }
           preview: {
               StreakLeaderboard(activeHabits: activeHabits)

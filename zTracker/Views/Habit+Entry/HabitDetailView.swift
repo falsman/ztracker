@@ -274,8 +274,8 @@ struct EntryRowView: View {
             Button("Delete", systemImage: "trash.fill", role: .destructive) {
                 context.delete(entry)
             }
-            Button("Cancel", systemImage: "xmark", role: .cancel) {}
-        } message: {_ in 
+            Button("Cancel", systemImage: "xmark", role: .cancel) { dismiss() }
+        } message: {_ in
             Text("This action cannot be undone.")
         }
         

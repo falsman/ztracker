@@ -15,7 +15,7 @@ enum SampleDataSeeder {
         let alreadySeeded = UserDefaults.standard.bool(forKey: "didSeedSampleData")
         guard !alreadySeeded else { return }
 
-        let habits = PreviewHelpers.makeHabits(days: 100)
+        let habits = PreviewHelpers.makeHabits(days: 500)
         habits.forEach { context.insert($0) }
 
         do {

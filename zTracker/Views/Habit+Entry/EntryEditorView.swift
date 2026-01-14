@@ -186,8 +186,7 @@ struct EntryEditorView: View {
                 time: { if case .duration = habit.type { return .seconds(timeHours * 3600 + timeMinutes * 60) } else { return nil } }(),
                 numValue: { if case .numeric = habit.type { return numericValue } else { return nil } }(),
                 ratValue: { if case .rating = habit.type { return ratingValue } else { return nil } }(),
-                note: note.isEmpty ? nil : note.trimmingCharacters(in: .whitespacesAndNewlines),
-                updatedAt: .now
+                note: note.isEmpty ? nil : note.trimmingCharacters(in: .whitespacesAndNewlines)
             )
             
                 dismiss()

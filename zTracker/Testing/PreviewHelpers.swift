@@ -13,7 +13,12 @@ struct PreviewHelpers {
     static let previewContainer: ModelContainer = {
         let schema = Schema([Habit.self, HabitEntry.self])
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        return try! ModelContainer(for: schema, configurations: config)
+        do {
+            let container = try ModelContainer(for: schema, configurations: config)
+            return container
+        } catch {
+            fatalError("Failed to create ModelContainer: \(error)")
+        }
     }()
     
     static func date(stringDate: String) -> Date {
@@ -93,7 +98,7 @@ struct PreviewHelpers {
             ),
         Habit(
             id: UUID(),
-            title: "Meals",
+            title: "Breakfast",
             type: .boolean(goal: .init(target: 1, frequency: .daily)),
             color: "green",
             icon: "fork.knife",
@@ -105,7 +110,7 @@ struct PreviewHelpers {
         Habit(
             id: UUID(),
             title: "Workout",
-            type: .duration(goal: .init(target: 1000, frequency: .weekly)),
+            type: .duration(goal: .init(target: (7 * 0.5 * 60 * 60), frequency: .weekly)),
             color: "orange",
             icon: "figure.run",
             isArchived: false,
@@ -127,7 +132,7 @@ struct PreviewHelpers {
         Habit(
             id: UUID(),
             title: "Water",
-            type: .numeric(min: 0, max: 20, unit: "cups", goal: .init(target: 30, frequency: .monthly)),
+            type: .numeric(min: 0, max: 20, unit: "cups", goal: .init(target: 8, frequency: .daily)),
             color: "blue",
             icon: "drop",
             isArchived: false,
@@ -171,7 +176,7 @@ struct PreviewHelpers {
         Habit(
             id: UUID(),
             title: "Dance",
-            type: .duration(goal: .init(target: 100, frequency: .monthly)),
+            type: .duration(goal: .init(target: (8 * 60 * 60), frequency: .monthly)),
             color: "orange",
             icon: "figure.dance",
             isArchived: true,

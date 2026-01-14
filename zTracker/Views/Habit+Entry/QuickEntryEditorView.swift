@@ -62,8 +62,7 @@ struct QuickEntryEditorView: View {
             completed: completed,
             time: durationSeconds.map { .seconds($0) },
             numValue: numeric,
-            ratValue: rating,
-            updatedAt: .now
+            ratValue: rating
         )
     }
 }

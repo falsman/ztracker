@@ -38,9 +38,22 @@
 		086150762EECC39500613F4D /* zTracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = zTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		08B3AF552F17D07D00C09716 /* Exceptions for "zTracker" folder in "zTracker" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 086150752EECC39500613F4D /* zTracker */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		086150782EECC39500613F4D /* zTracker */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				08B3AF552F17D07D00C09716 /* Exceptions for "zTracker" folder in "zTracker" target */,
+			);
 			path = zTracker;
 			sourceTree = "<group>";
 		};
@@ -290,7 +303,7 @@
 		086150842EECC39700613F4D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = zTrackerIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = zTracker/zTracker.entitlements;
 				CODE_SIGN_STYLE = Automatic;
@@ -352,7 +365,7 @@
 		086150852EECC39700613F4D /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = zTrackerIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = zTracker/zTracker.entitlements;
 				CODE_SIGN_STYLE = Automatic;

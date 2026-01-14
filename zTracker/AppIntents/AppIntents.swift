@@ -32,7 +32,7 @@ struct LogBooleanHabitIntent: AppIntent {
         guard case .boolean = actualHabit.type else { throw IntentError.wrongHabitType }
         
         let targetDate = Calendar.current.startOfDay(for: date)
-        _ = actualHabit.createOrUpdateEntry(for: targetDate, completed: completion, updatedAt: .now)
+        _ = actualHabit.createOrUpdateEntry(for: targetDate, completed: completion)
         
         try context.save()
         
@@ -70,7 +70,7 @@ struct LogDurationHabitIntent: AppIntent {
         let timeDuration = Duration.seconds(seconds)
         
         let targetDate = Calendar.current.startOfDay(for: date)
-        _ = actualHabit.createOrUpdateEntry(for: targetDate, time: timeDuration, updatedAt: .now)
+        _ = actualHabit.createOrUpdateEntry(for: targetDate, time: timeDuration)
         
         try context.save()
         
@@ -108,7 +108,7 @@ struct LogRatingHabitIntent: AppIntent {
         guard value >= min && value <= max else { throw IntentError.valueOutOfRange(min: min, max: max) }
         
         let targetDate = Calendar.current.startOfDay(for: date)
-        _ = actualHabit.createOrUpdateEntry(for: targetDate, ratValue: value, updatedAt: .now)
+        _ = actualHabit.createOrUpdateEntry(for: targetDate, ratValue: value)
         
         try context.save()
         
@@ -144,7 +144,7 @@ struct LogNumericHabitIntent: AppIntent {
         guard value >= min && value <= max else { throw IntentError.valueOutOfRange(min: Int(min), max: Int(max)) }
         
         let targetDate = Calendar.current.startOfDay(for: date)
-        _ = actualHabit.createOrUpdateEntry(for: targetDate, numValue: value, updatedAt: .now)
+        _ = actualHabit.createOrUpdateEntry(for: targetDate, numValue: value)
         
         try context.save()
         

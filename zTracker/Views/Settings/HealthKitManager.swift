@@ -17,7 +17,7 @@ class HealthKitManager {
     
     private let healthStore = HKHealthStore()
     
-    private init() {}
+private init() {}
     
     func requestAuthorization() async throws {
         print("Checking HK Authorization")
@@ -131,8 +131,8 @@ func syncHealthKitData(for date: Date, in context: ModelContext) async throws {
     
     let startOfDate = Calendar.current.startOfDay(for: date)
     
-    _ = sleepHabit.createOrUpdateEntry(for: startOfDate, time: sleepDuration, updatedAt: .now)
-    _ = mindfulHabit.createOrUpdateEntry(for: startOfDate, time: mindfulDuration, updatedAt: .now)
+    _ = sleepHabit.createOrUpdateEntry(for: startOfDate, time: sleepDuration)
+    _ = mindfulHabit.createOrUpdateEntry(for: startOfDate, time: mindfulDuration)
     print("Entries Created")
     
     try context.save()

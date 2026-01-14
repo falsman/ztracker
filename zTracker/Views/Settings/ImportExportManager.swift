@@ -136,6 +136,7 @@ struct ExportDocument: FileDocument {
         self.data = data
     }
     
+    // needed for compiler compliance of FileDocument type
     init(configuration: ReadConfiguration) throws {
         data = Data()
     }

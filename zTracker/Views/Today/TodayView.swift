@@ -40,7 +40,7 @@ struct TodayView: View {
                 StatsOverviewView()
                     .padding(.horizontal)
                 
-                HabitCardView()
+                HabitCardView(activeHabits: activeHabits, selectedHabit: $selectedHabit)
                 
             }
             
@@ -53,9 +53,7 @@ struct TodayView: View {
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button() { Task {
-                        print("Sync Button tapped")
                         try? await syncHealthKitData(for: today, in: context)
-                        print("Syn Button Task Executed")
                     }
                     } label: { Label("Sync Health Data", systemImage: "arrow.down.heart.fill") }
                         .tint(.red.opacity(0.75))
@@ -70,18 +68,23 @@ struct TodayView: View {
                 .background(Color(.clear))
         }
     }
+}
+
+struct HabitCardView: View {
+    var activeHabits: [Habit]
+    @Binding var selectedHabit: Habit?
     
-    private func HabitCardView() -> some View {
-        #if os(macOS)
-        let columns = [
-            GridItem(.adaptive(minimum: 300, maximum: 300))
-        ]
-        #elseif os(iOS)
-        let columns = [
-            GridItem(.adaptive(minimum: 300, maximum: 600))
-        ]
-        #endif
-        
+    #if os(macOS)
+    let columns = [
+        GridItem(.adaptive(minimum: 300, maximum: 300))
+    ]
+    #elseif os(iOS)
+    let columns = [
+        GridItem(.adaptive(minimum: 300, maximum: 600))
+    ]
+    #endif
+    
+    var body: some View {
         return LazyVGrid(columns: columns) {
             ForEach(activeHabits) {
                 habit in HabitCard(habit: habit, date: today) {
@@ -95,7 +98,6 @@ struct TodayView: View {
         }
     }
 }
-
 
 struct HabitCard: View {
     let habit: Habit

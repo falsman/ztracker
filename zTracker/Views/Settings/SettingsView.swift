@@ -201,6 +201,9 @@ struct ImportExportSection: View {
 }
 
 struct InfoSection: View {
+    private let privacyPolicyURLString = "https://zTracker.com/privacy"
+    private let termsOfServiceURLString = "https://zTracker.com/terms"
+    
     var body: some View {
         VStack {
             HStack {
@@ -209,10 +212,10 @@ struct InfoSection: View {
                 Text("1.0.0")
                     .foregroundStyle(.secondary)
             }
-            Link("Privacy Policy", destination: URL(string: "https://zTracker.com/privacy")!)
+            Link("Privacy Policy", destination: URL(string: privacyPolicyURLString)!)
                 .frame(maxWidth: .infinity, alignment: .leading)
             
-            Link("Terms of Service", destination: URL(string: "https://zTracker.com/terms")!)
+            Link("Terms of Service", destination: URL(string: termsOfServiceURLString)!)
                 .frame(maxWidth: .infinity, alignment: .leading)
             
             
@@ -227,6 +230,7 @@ struct InfoSection: View {
 
 struct NuclearSection: View {
     @Environment(\.modelContext) private var context
+    @Environment(\.dismiss) private var dismiss
     
     @State private var showingDeleteAlert = false
 
@@ -246,7 +250,7 @@ struct NuclearSection: View {
         .alert("Are you sure you want to Delete Everything?", isPresented: $showingDeleteAlert) {
             Button("Delete Everything", systemImage: "trash.fill", role: .destructive) {
                 context.container.deleteAllData() }
-            Button("Cancel", systemImage: "xmark", role: .cancel) {}
+            Button("Cancel", systemImage: "xmark", role: .cancel) { dismiss() }
         } message: { Text("This action cannot be undone.")
         }
         

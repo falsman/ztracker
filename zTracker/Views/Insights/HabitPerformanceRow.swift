@@ -12,7 +12,7 @@ struct HabitPerformanceRow: View {
     let habit: Habit
     let days: Int
     
-    private var completionRate: Double { habit.completionRate(days: days) }
+    private var habitCompletionRate: Double { habit.completionRate(days: days) }
     private var streak: Int { habit.currentStreak() }
     
     var body: some View {
@@ -20,7 +20,8 @@ struct HabitPerformanceRow: View {
             if let icon = habit.icon {
                 ZStack {
                     Circle()
-                        .fill(Color(habit.color.color).opacity(0.3))
+                        .trim(from: 0, to: habitCompletionRate)
+                        .fill(Color(habit.swiftUIColor).tertiary)
                         .frame(width: 40, height: 40)
                     Image(systemName: icon)
                 }
@@ -30,38 +31,64 @@ struct HabitPerformanceRow: View {
                 Text(habit.title)
                     .font(.subheadline)
                     .fontWeight(.medium)
-                ProgressView(value: completionRate)
+                ProgressView(value: habitCompletionRate)
                     .frame(height: 4)
             }
             Spacer()
             
+            let averageInfo = HabitAverage(habit: habit, days: days)
             VStack(alignment: .trailing) {
-                Text("\(Int(completionRate * 100)) %")
-                    .font(.headline)
-                    .fontWeight(.semibold)
-                
-                HStack {
-                    Image(systemName: "flame")
-                        .font(.caption)
-                        .foregroundStyle(.orange)
-                    Text("\(streak)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+                Text(averageInfo.value)
+                Text(averageInfo.caption)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
+            .containerRelativeFrame(.horizontal, count: 5, span: 1, spacing: 0, alignment: .trailing)
+
         }
         .padding()
-        .glassEffect(.regular.tint(Color(habit.color.color).opacity(0.3)), in: .rect(cornerRadius: 16))
+        .glassEffect(in: .rect(cornerRadius: 16)) // .regular.tint(Color(habit.swiftUIColor).opacity(0.3)),
     }
 }
 
-//#Preview("Empty State") {
-//    HabitPerformanceRow(habit: Habit, days: 7)
-//        .modelContainer(PreviewHelpers.previewContainer)
-//        .environmentObject(AppState())
-//}
 
-#Preview("With Sample Data") {
+
+struct HabitAverage {
+    let value: String
+    let caption: String
+    
+    init(habit: Habit, days: Int) {
+        
+        let completedEntryCount = habit.completionRate(days: days) * Double(days)
+        
+        switch habit.type {
+        case .boolean:
+            value = completedEntryCount.formatted()
+            caption = "days"
+            
+        case .rating(min: _, let max, _):
+            value = habit.habitAverage(days: days).formatted(.number.precision(.fractionLength(2)))
+            caption = "avg. / \(max)"
+            
+        case .duration:
+            let duration = Duration.seconds(habit.habitAverage(days: days))
+            value = duration.formatted(
+                .units(
+                    allowed: [.hours, .minutes, .seconds],
+                    width: .narrow,
+                    maximumUnitCount: 2
+                )
+            )
+            caption = "avg."
+            
+        case .numeric(min: _, max: _, let unit, _):
+            value = habit.habitAverage(days: days).formatted(.number.precision(.fractionLength(2)))
+            caption = "avg. \(unit)"
+        }
+    }
+}
+
+#Preview("Habit Performance Row") {
     let container = PreviewHelpers.previewContainer
     
     let habits = PreviewHelpers.makeHabits()
@@ -69,9 +96,27 @@ struct HabitPerformanceRow: View {
     
     try? container.mainContext.save()
     
-    let habitToShow = habits[0]
+    return VStack {
+        ForEach(habits, id: \.id) { habit in
+            HabitPerformanceRow(habit: habit, days: 7)
+            Divider()
+        }
+    }
+    .modelContainer(container)
+            
+}
+
+#Preview("Insights View") {
+    NavigationStack {
+        let container = PreviewHelpers.previewContainer
         
-    return HabitPerformanceRow(habit: habitToShow, days: 7)
+        let habits = PreviewHelpers.makeHabits()
+        habits.forEach { container.mainContext.insert($0) }
+        
+        try? container.mainContext.save()
+        
+        return InsightsView()
             .modelContainer(container)
-            .environmentObject(AppState())
+            
+    }
 }

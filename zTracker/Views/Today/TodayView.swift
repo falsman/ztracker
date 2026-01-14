@@ -9,114 +9,169 @@ import SwiftUI
 import SwiftData
 
 struct TodayView: View {
-    @EnvironmentObject private var appState: AppState
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.modelContext) private var context
     
-    @Query(filter: #Predicate<Habit> { !$0.isArchived })
+    @AppStorage("healthKitEnabled") var healthKitEnabled = true
+        
+    @Query(filter: #Predicate<Habit> { !$0.isArchived },
+           sort: \.sortIndex,
+           order: .forward
+    )
     private var activeHabits: [Habit]
     
-    @State private var showingEntryEditor: Habit?
     @State private var selectedHabit: Habit?
-    @State private var path = NavigationPath()
     
-    private let columns = [
-        GridItem(.adaptive(minimum: 300, maximum: 400))
-    ]
+    private var currentTime = Text(Date(), style: .time)
     
     var body: some View {
-        NavigationSplitView {
-            listContent
-        } detail: {
-            detailContent
-        }
-        .sheet(item: $showingEntryEditor) { habit in EntryEditorView(habit: habit, date: today) }
-        //        .sheet(isPresented: $appState.showingNewHabit) { HabitEditorView() }
-        .onAppear {
-            if selectedHabit == nil {
-                selectedHabit = activeHabits.first
+        NavigationStack {
+            ScrollView {
+                #if os(macOS)
+                VStack {
+                    Text(Date(), style: .date)
+                        .font(.title)
+                    currentTime
+                        .font(.title2)
+                        .foregroundStyle(.secondary)
+                }
+                .padding()
+                #endif
+                
+                StatsOverviewView()
+                    .padding(.horizontal)
+                
+                HabitCardView()
+                
             }
+            
+            #if os(iOS)
+            .background(movingLinearGradient(selectedColor: .theme))
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationTitle(Text(Date(), style: .date))
+            .navigationSubtitle(currentTime)
+            
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button() { Task {
+                        print("Sync Button tapped")
+                        try? await syncHealthKitData(for: today, in: context)
+                        print("Syn Button Task Executed")
+                    }
+                    } label: { Label("Sync Health Data", systemImage: "arrow.down.heart.fill") }
+                        .tint(.red.opacity(0.75))
+                        .buttonStyle(.glassProminent)
+                        .disabled(healthKitEnabled == false)
+                }
+            }
+            #endif
+        }
+        .sheet(item: $selectedHabit) {
+            habit in EntryEditorView(habit: habit, date: today)
+                .background(Color(.clear))
         }
     }
     
-    private var listContent: some View {
-        ScrollView {
-            
-            // MARK: date header
-            VStack {
-                Text(today, style: .date)
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                Text(today, style: .time)
-                    .font(.body)
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.top)
-            
-            StatsOverviewView()
-                .padding(Edge.Set.horizontal)
-            
-            // MARK: today's habits
-            LazyVGrid(columns: columns) {
-                ForEach(activeHabits) { habit in HabitCardView(habit: habit) { showingEntryEditor = habit }
-                        .contextMenu {
-                            Button("Edit Entry") {
-                                showingEntryEditor = habit
-                            }
-                            
-                            Button("View Details") {
-                                appState.selectedHabit = habit
-                                appState.selectedTab = .habits
-                                path.append(habit)
-                            }
-                            
-                            Divider()
-                            
-                            Button("Archive", role: .destructive) {
-                                habit.isArchived.toggle()
-                            }
-                        }
-                }
-            }
-            .padding()
-            .navigationDestination(for: Habit.self) { habit in
-                HabitDetailView(habit: habit)
-            }
-            
-            if activeHabits.isEmpty { EmptyStateView() }
-        }
-        .navigationTitle("Today")
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button() { Task {
-                    try? await syncHealthKitData(for: today, in: modelContext)
-                }
-                } label: { Label("Sync Health Data", systemImage: "arrow.down.heart.fill") }
-                    .buttonStyle(.glassProminent)
-            }
-        }
+    private func HabitCardView() -> some View {
+        #if os(macOS)
+        let columns = [
+            GridItem(.adaptive(minimum: 300, maximum: 300))
+        ]
+        #elseif os(iOS)
+        let columns = [
+            GridItem(.adaptive(minimum: 300, maximum: 600))
+        ]
         #endif
-    }
-    
-    private var detailContent: some View {
-        Group {
-            if let habit = appState.selectedHabit {
-                EntryEditorView(habit: habit, date: today)
-            } else {
-                listContent
+        
+        return LazyVGrid(columns: columns) {
+            ForEach(activeHabits) {
+                habit in HabitCard(habit: habit, date: today) {
+                    selectedHabit = habit
+                }
             }
+        }
+        .padding()
+        .navigationDestination(for: Habit.self) { habit in
+            HabitDetailView(habit: habit)
         }
     }
 }
 
-#Preview("Empty State") {
-    TodayView()
-        .modelContainer(PreviewHelpers.previewContainer)
-        .environmentObject(AppState())
+
+struct HabitCard: View {
+    let habit: Habit
+    let date: Date
+    let onTap: () -> Void
+    
+    @State private var entry: HabitEntry?
+    
+    var body: some View {
+        HStack {
+            if let icon = habit.icon { Image(systemName: icon) }
+            
+            Text(habit.title)
+            
+            Spacer()
+            
+            if habit.currentStreak() > 0 {
+                HStack {
+                    Image(systemName: "flame").font(.caption)
+                    Text("\(habit.currentStreak())").font(.caption)
+                }
+                .foregroundStyle(habit.swiftUIColor.secondary)
+            }
+            
+            Divider()
+            
+            if let entry = entry {
+                EntryView(habit: habit, entry: entry)
+                    #if os(macOS)
+                    .frame(width: 90)
+                    #elseif os(iOS)
+                    .containerRelativeFrame(.horizontal, count: 10, span: 3, spacing: 0)
+                    #endif
+            } else {
+                Text("Tap to log")
+                    #if os(macOS)
+                    .frame(width: 90, alignment: .trailing)
+                    #elseif os(iOS)
+                    .containerRelativeFrame(.horizontal, count: 10, span: 3, spacing: 0, alignment: .trailing)
+                    #endif
+            }
+        }
+        .foregroundStyle(habit.swiftUIColor)
+        
+        .padding()
+        #if os(macOS)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        #endif
+        .glassEffect(in: .rect(cornerRadius: 16))
+        
+        .contentShape(.rect)
+        .onTapGesture { onTap() }
+
+        .onAppear { loadEntry() }
+        .onChange(of: habit.entries) { loadEntry() }
+        
+        .contextMenu {
+            QuickEntryEditorView(habit: habit, date: date)
+            #if os(macOS)
+            Divider()
+            NavigationLink {
+                HabitDetailView(habit: habit)
+            } label: {
+                Label("View Habit Details", systemImage: "info.circle")
+            }
+            .buttonStyle(.glass)
+            #endif
+        }
+    }
+    
+    private func loadEntry() {  entry = habit.entry(for: date) }
 }
 
-#Preview("With Sample Data") {
+
+
+#Preview("Today View") {
         let container = PreviewHelpers.previewContainer
         
         let habits = PreviewHelpers.makeHabits()
@@ -126,5 +181,35 @@ struct TodayView: View {
         
         return TodayView()
             .modelContainer(container)
-            .environmentObject(AppState())
+}
+
+#Preview("Habit Card View") {
+    let container = PreviewHelpers.previewContainer
+    let habits = PreviewHelpers.makeHabits()
+    
+    habits.forEach { container.mainContext.insert($0) }
+    try? container.mainContext.save()
+    
+    return HabitCard(habit: habits[2], date: today, onTap: {})
+        .modelContainer(container)
+}
+
+#Preview("Habit Cards VStack") {
+    let container = PreviewHelpers.previewContainer
+    
+    let habits = PreviewHelpers.makeHabits()
+    habits.forEach { container.mainContext.insert($0) }
+    
+    try? container.mainContext.save()
+    
+    let firstFourHabits = Array(habits.prefix(4))
+    
+    return VStack {
+        ForEach(firstFourHabits, id: \.id) { habit in
+            HabitCard(habit: habit, date: today, onTap: {})
+            Divider()
+        }
+    }
+    .modelContainer(container)
+    
 }

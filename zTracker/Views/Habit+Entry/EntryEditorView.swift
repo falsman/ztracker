@@ -14,15 +14,18 @@ struct EntryEditorView: View {
     let habit: Habit
     let date: Date
     let existingEntry: HabitEntry?
-        
+
     @State private var completed = false
     @State private var timeHours = 0
-    @State private var timeMinutes = 0
+    @State private var timeMinutes = 03
     @State private var timeDuration: Duration = .zero
-    @State private var ratingValue = 1
-    @State private var numericValue = 0.00
+    @State private var ratingValue = 0
+    @State private var numericValue: Double?
     @State private var note = ""
-    @State private var datePicker = today
+    
+    @State private var updatedAt: Date?
+        
+    @State private var minMaxError = false
     
     init(habit: Habit, entry: HabitEntry? = nil, date: Date? = nil) {
         self.habit = habit
@@ -32,71 +35,112 @@ struct EntryEditorView: View {
     
     var body: some View {
         NavigationStack {
-                Form {
-                    Section {
-                        LabeledContent("Date", value: date.formatted(date: .abbreviated, time: .omitted))
-                            .foregroundStyle(.secondary)
+            ScrollView {
+                VStack() {
+                    #if os(macOS)
+                    HStack {
+                        Image(systemName: habit.icon ?? "questionmark.circle")
+                            .font(.title)
+                        Text(habit.title)
+                            .font(.title)
                     }
-                    
-                    Section(habit.type.displayName) {
-                        switch habit.type {
-                        case .boolean: Toggle("Mark Completed", isOn: $completed)
-                                .toggleStyle(.button)
-                                .frame(maxWidth: .infinity)
-                            
-                        case .duration: durationPicker()
+                    .frame(alignment: .top)
+                    .foregroundStyle(habit.swiftUIColor)
+                        
+                    Divider()
+                        .padding()
 
-                        case .rating(let min, let max): ratingPicker(min: min, max: max)
-                            
-                        case .numeric(_, _, let unit):
-//                            VStack {
-                            HStack {
-                                    TextField("Value", value: $numericValue, format: .number.precision(.fractionLength(2)))
-                                        .font(.title2)
-                                        .fontWeight(.semibold)
-                                        .multilineTextAlignment(.trailing)
-                                    Text(unit)
-                                        .font(.title2)
-                                        .fontWeight(.semibold)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                }
-//                                Text(String(format: "%.2f %@", numericValue, unit))
-//                                    .font(.title2)
-//                                    .fontWeight(.semibold)
-//                                
-//                                TextField("Value", value: $numericValue, format: .number)
-//                            }
-                            .padding(.vertical)
-                        }
-                    }
+                    #endif
+                        
+                    dateSection
+                        .glassEffect(in: .rect(cornerRadius: 16))
+                        .glassEffect(in: .rect(cornerRadius: 16))
+                        .padding(.horizontal)
                     
+                    metricSection
+                        .glassEffect(in: .rect(cornerRadius: 16))
+                        .padding(.horizontal)
                     
-                    Section("Note") {
-                        TextEditor(text: $note)
-                            .frame(height: 100)
+                    noteSection
+                        .glassEffect(in: .rect(cornerRadius: 16))
+                        .padding([.bottom, .horizontal])
+                    
+                    Text("Last updated: \(updatedAt?.formatted(date: .abbreviated, time: .complete) ?? "now?")")
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal)
+                        .padding(.horizontal)
+                        .font(.caption)
 
-                    }
-                }
-                .navigationTitle(habit.title)
-                .glassEffect(.regular.tint(Color(habit.color.color)), in: .rect(cornerRadius: 16))
-            
-#if os(iOS)
-                .navigationBarTitleDisplayMode(.inline)
-#endif
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel", systemImage: "xmark", role: .cancel) { dismiss() }
-                    }
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Save") { saveEntry(); dismiss() }
-                    }
                 }
             }
+            .toolbar {
+                #if os(iOS)
+                ToolbarItem(placement: .principal) {
+                    HStack() {
+                        Image(systemName: habit.icon ?? "questionmark.circle")
+                            .symbolRenderingMode(.hierarchical)
+                        Text(habit.title)
+                            .font(.headline)
+                    }
+                }
+                #endif
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel", systemImage: "xmark", role: .cancel) { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save", systemImage: "checkmark", role: .confirm) { saveEntry(); dismiss() }
+                }
+            }
+            .presentationDetents([.medium, .large])
+            .tint(Color(habit.swiftUIColor))
             .onAppear { loadEntry() }
-            .presentationDetents([.medium])
-            .tint(habit.color.color)
-
+        }
     }
+    
+    private var dateSection: some View {
+        VStack {
+            Text(date.formatted(date: .abbreviated, time: .omitted))
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding()
+    }
+    
+    private var metricSection: some View {
+        VStack {
+            switch habit.type {
+            case .boolean(_):
+                Toggle(isOn: $completed) {
+                    Label(
+                        completed ? "Completed" : "Mark Completed",
+                        systemImage: completed ? "checkmark.circle.dotted" : "circle.dotted"
+                    )
+                }
+                    .toggleStyle(.button)
+                    .frame(maxWidth: .infinity)
+
+            case .duration(_):
+                durationPicker()
+
+            case .rating(let min, let max, _):
+                ratingPicker(min: min, max: max)
+
+            case .numeric(let min, let max, let unit, _):
+                numericPicker(min: min, max: max, unit: unit)
+            }
+            
+        }
+        .padding(.vertical)
+    }
+    
+    private var noteSection: some View {
+        VStack {
+            TextField("Note", text: $note)
+                .scrollContentBackground(.hidden)
+                .autocorrectionDisabled(false)
+        }
+        .padding()
+    }
+
     
     private func loadEntry() {
         var entryToUse: HabitEntry?
@@ -120,9 +164,12 @@ struct EntryEditorView: View {
             timeHours = 0
             timeMinutes = 0
         }
+        
         ratingValue = entryToUse?.ratValue ?? 3
-        numericValue = entryToUse?.numValue ?? 0
+        numericValue = entryToUse?.numValue
         note = entryToUse?.note ?? ""
+        
+        updatedAt = entryToUse?.updatedAt ?? .now
     }
     
     func updateDuration() {
@@ -139,7 +186,8 @@ struct EntryEditorView: View {
                 time: { if case .duration = habit.type { return .seconds(timeHours * 3600 + timeMinutes * 60) } else { return nil } }(),
                 numValue: { if case .numeric = habit.type { return numericValue } else { return nil } }(),
                 ratValue: { if case .rating = habit.type { return ratingValue } else { return nil } }(),
-                note: note.isEmpty ? nil : note
+                note: note.isEmpty ? nil : note.trimmingCharacters(in: .whitespacesAndNewlines),
+                updatedAt: .now
             )
             
                 dismiss()
@@ -149,10 +197,13 @@ struct EntryEditorView: View {
     private func ratingPicker(min: Int, max: Int) -> some View {
         HStack {
             ForEach(min...max, id: \.self) { value in
-                Image(systemName: value <= ratingValue ? "star.fill" : "star")
+                let isFilled = value <= ratingValue
+
+                Image(systemName: isFilled ? "star.fill" : "star")
                     .font(.title)
-                    .foregroundStyle(value <= ratingValue ? habit.color.color : .secondary)
-                    .contentShape(Rectangle())
+                    .foregroundStyle(habit.swiftUIColor)
+//                    .scaleEffect(isFilled ? 1.15 : 1.0)
+                    .animation(.easeInOut(duration: 0.2), value: ratingValue)
                     .onTapGesture { ratingValue = value }
             }
         }
@@ -161,35 +212,71 @@ struct EntryEditorView: View {
     
     private func durationPicker () -> some View {
         HStack {
-            Picker("Hours", selection: $timeHours) {
-                ForEach(0..<24) { hour in
-                    Text("\(hour)").tag(hour)
+            HStack {
+                Picker("hours", selection: $timeHours) {
+                    ForEach(0..<24) { hour in
+                        Text("\(hour)").tag(hour)
+                    }
                 }
+                Text("hours")
             }
-            #if os(iOS)
-            .pickerStyle(.wheel)
-            #endif
-                                            
-            Divider()
+            .padding(.horizontal)
+            .glassEffect(in: .rect(cornerRadius: 16))
             
-            Picker("Minutes", selection: $timeMinutes) {
-                ForEach(0..<60) { minute in
-                    Text("\(minute)").tag(minute)
+            
+            HStack {
+                Picker("mins", selection: $timeMinutes) {
+                    ForEach(0..<60) { minute in
+                        Text("\(minute)").tag(minute)
+                    }
                 }
+                Text("mins")
             }
-            #if os(iOS)
-            .pickerStyle(.wheel)
-            #endif
+            .padding(.horizontal)
+            .glassEffect(in: .rect(cornerRadius: 16))
             
         }
+        .frame(maxWidth: .infinity)
         .onChange(of: timeHours) { updateDuration() }
         .onChange(of: timeMinutes) { updateDuration() }
     }
+    
+    private func numericPicker(min: Double, max: Double, unit: String) -> some View {
+        
+        return VStack {
+            HStack {
+                TextField(
+                    "Value",
+                    value: $numericValue,
+                    format: .number
+                )
+                .font(.title2)
+                .fontWeight(.semibold)
+                .multilineTextAlignment(.trailing)
+                #if os(iOS)
+                .keyboardType(.decimalPad)
+                #endif
+
+                Text(unit)
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .foregroundStyle(minMaxError ? .red : .primary)
+            .onChange(of: numericValue) { minMaxCheck(min: min, max: max) }
+
+            if minMaxError { Text("Value outside min/max bounds").foregroundStyle(.red).font(.caption) }
+        }
+    }
+    
+    private func minMaxCheck(min: Double, max: Double) {
+        if let numericValue = numericValue, (numericValue < min || numericValue > max) { minMaxError = true }
+        else { minMaxError = false }
+    }
+
 }
 
-
-
-#Preview("With Sample Data") {
+#Preview("Sheet View") {
     let container = PreviewHelpers.previewContainer
     
     let habits = PreviewHelpers.makeHabits()
@@ -197,9 +284,30 @@ struct EntryEditorView: View {
     
     try? container.mainContext.save()
     
-    let habitToShow = habits[1]
+    let habitToShow = habits[2]
+    
+    let date = Date(timeInterval: 1000, since: .now)
+    
+    return Text("Parent Backgroudn View")
+        .sheet(isPresented: .constant(true)) {
+            EntryEditorView(habit: habitToShow, date: date)
+//                .background(Color(habitToShow.swiftUIColor).gradient)
+        }
+        .modelContainer(container)
+        
+}
+
+#Preview("Full Screen View") {
+    let container = PreviewHelpers.previewContainer
+    
+    let habits = PreviewHelpers.makeHabits()
+    habits.forEach { container.mainContext.insert($0) }
+    
+    try? container.mainContext.save()
+    
+    let habitToShow = habits[2]
     
     return EntryEditorView(habit: habitToShow)
         .modelContainer(container)
-        .environmentObject(AppState())
+        
 }

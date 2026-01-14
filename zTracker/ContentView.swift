@@ -9,26 +9,24 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
-    @EnvironmentObject private var appState: AppState
-    
     var body: some View {
-        TabView(selection: $appState.selectedTab) {
-            Tab("Today", systemImage: "checklist", value: .today) { TodayView() }
-            Tab("Habits", systemImage: "square.grid.2x2", value: .habits) { HabitsView() }
-            Tab("Insights", systemImage: "chart.xyaxis.line", value: .insights) { InsightsView() }
-            Tab("Settings", systemImage: "gear", value: .settings) { SettingsView() }
+        TabView() {
+            Tab("Today", systemImage: "checklist") { TodayView() }
+            Tab("Habits", systemImage: "square.grid.2x2") { HabitsView() }
+            Tab("Calendar", systemImage: "calendar") { CalendarView() }
+            Tab("Insights", systemImage: "chart.xyaxis.line") { InsightsView() }
+            Tab("Settings", systemImage: "gear") { SettingsView() }
         }
-        
+        .background(movingLinearGradient(selectedColor: .theme))
     }
 }
 
 #Preview("Empty State") {
     ContentView()
         .modelContainer(PreviewHelpers.previewContainer)
-        .environmentObject(AppState())
 }
 
-#Preview("With Sample Data") {
+#Preview("Content View") {
         let container = PreviewHelpers.previewContainer
         
         let habits = PreviewHelpers.makeHabits()
@@ -38,36 +36,4 @@ struct ContentView: View {
         
         return ContentView()
             .modelContainer(container)
-            .environmentObject(AppState())
 }
-
-
-//private struct macOSContentView: View {
-//    @EnvironmentObject private var appState: AppState
-//    
-//    var body: some View {
-//        NavigationSplitView {
-//            List(selection: $appState.selectedTab) {
-//                Label("Today", systemImage: "checklist")
-//                    .tag(AppState.Tab.today)
-//                
-//                Label("Habits", systemImage: "square.grid.2x2")
-//                    .tag(AppState.Tab.habits)
-//                
-//                Label("Insights", systemImage: "chart.line.uptrend.xyaxis")
-//                    .tag(AppState.Tab.insights)
-//                
-//                Label("Settings", systemImage: "gear")
-//                    .tag(AppState.Tab.settings)
-//            }
-//            .navigationTitle("zTracker")
-//        } detail: {
-//            switch appState.selectedTab {
-//            case .today: TodayView()
-//            case .habits: HabitsView()
-//            case .insights: InsightsView()
-//            case .settings: SettingsView()
-//            }
-//        }
-//    }
-//}

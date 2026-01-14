@@ -30,7 +30,7 @@ final class HabitEntry {
         ratValue: Int? = nil,
         numValue: Double? = nil,
         note: String? = nil,
-        updatedAt: Date = today,
+        updatedAt: Date = Date(),
         
         habit: Habit? = nil
     ) {
@@ -51,11 +51,16 @@ final class HabitEntry {
         guard let habit = habit else { return "N/A" }
         
         switch habit.type {
-        case .boolean: return completed == true ? "Completed" : "Not Completed"
-        case .duration: return time?.formatted(.time(pattern: .hourMinute)) ?? "No Time"
-        case .rating(_, let max): if let ratValue = ratValue { return "\(ratValue)/\(max)" }
+        case .boolean: return completed == true ? "Completed" : "Incomplete"
+        case .duration: return time?.formatted(
+            .units(
+                allowed: [.hours, .minutes, .seconds, .milliseconds],
+                width: .abbreviated,
+                maximumUnitCount: 2
+                  )) ?? "No Time"
+        case .rating(_, let max, _): if let ratValue = ratValue { return "\(ratValue) / \(max)" }
             return "No ratValue"
-        case .numeric(_, _, let unit): if let numValue = numValue { return String(format: "%.2f %@", numValue, unit) }
+        case .numeric(_, _, let unit, _): if let numValue = numValue { return String(format: "%.1f %@", numValue, unit) }
             return "No numValue"
         }
     }
@@ -67,16 +72,3 @@ extension HabitEntry {
         set { durationSeconds = newValue.map { Int64($0.components.seconds) } }
     }
 }
-
-
-//struct DateDuration: Codable, Hashable {
-//    var startTime: Date
-//    var endTime: Date
-//    
-//}
-//
-//extension DateDuration {
-//    var dateDuration: Duration {
-//        .seconds(endTime.timeIntervalSince(startTime))
-//    }
-//}

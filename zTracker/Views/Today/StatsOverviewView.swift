@@ -12,13 +12,82 @@ struct StatsOverviewView: View {
     @Query(filter: #Predicate<Habit> { !$0.isArchived })
     private var activeHabits: [Habit]
     
-    // TODO: reuse function from before
-    private var completionRate: Double {
-        let today = Calendar.current.startOfDay(for: today)
+    var body: some View {
+        HStack {
+            let todayCompletionRate = dailyCompletionRate(for: today)
+            let completedHabitCount = todayCompletionRate * Double(activeHabits.count)
+            StatCard(
+                title: "Today",
+                value: todayCompletionRate.formatted(.percent.precision(.fractionLength(0))),
+                icon: "ellipsis.calendar",
+                iconVariation: todayCompletionRate,
+                caption: ("\(Int(completedHabitCount)) / \(activeHabits.count)")
+                )
+            .contentShape(.rect)
+            .contextMenu {
+                Button("what") {}
+            }
+          preview: {
+              VStack {
+              }
+              .padding()
+              .glassEffect(in: .rect(cornerRadius: 16))
+            }
+            
+            StatCard(
+                title: "Habits",
+                value: activeHabits.count.description,
+                icon: "square.grid.2x2",
+                iconVariation: 1,
+                caption: "Active"
+            )
+            .contentShape(.rect)
+            .contextMenu {
+                Button("what") {}
+            }
+          preview: {
+              VStack(alignment: .leading) {
+                  Text("This Week")
+                      .font(.headline)
+                  
+                  ForEach(activeHabits) { habit in
+                      HStack() {
+                          Image(systemName: habit.icon ?? "checkmark.circle")
+                          Text(habit.title)
+                          
+                          Spacer()
+                                                    
+                          Text((HabitAverage(habit: habit, days: 7)).value)
+                      }
+                      .foregroundStyle(habit.swiftUIColor.secondary)
+                  }
+              }
+              .padding()
+              .glassEffect(in: .rect(cornerRadius: 16))
+            }
+            
+            StatCard(
+                title: "Streak",
+                value: longestStreak().streakCount.description,
+                icon: "flame",
+                iconVariation: 1,
+                caption: "Longest: \(longestStreak().habit.title)"
+            )
+            .contentShape(.rect)
+            .contextMenu {
+                Button("what") {}
+            }
+          preview: {
+              StreakLeaderboard(activeHabits: activeHabits)
+            }
+        }
+    }
+    
+    private func dailyCompletionRate(for date: Date) -> Double {
         var completed = 0
         
         for habit in activeHabits {
-            if let entry = habit.entry(for: today) {
+            if let entry = habit.entry(for: date) {
                 switch habit.type {
                 case .boolean: if entry.completed == true { completed += 1 }
                 case .duration: if entry.time != nil { completed += 1 }
@@ -31,29 +100,16 @@ struct StatsOverviewView: View {
         return activeHabits.isEmpty ? 0 : Double(completed) / Double(activeHabits.count)
     }
     
-    var body: some View {
-        HStack {
-            StatCard(
-                title: "Today",
-                value: "\(Int(completionRate * 100))%",
-                icon: "checkmark.circle",
-                color: .green
-            )
+    private func longestStreak() -> (habit: Habit, streakCount: Int) {
+        var currentLongest = (habit: activeHabits.first!, streakCount: activeHabits.first!.currentStreak())
+        
+        for habit in activeHabits {
+            if habit.currentStreak() > currentLongest.streakCount {
+                currentLongest = (habit: habit, streakCount: habit.currentStreak())
+            }
             
-            StatCard(
-                title: "Habits",
-                value: "\(activeHabits.count)",
-                icon: "square.grid.2x2",
-                color: .blue
-            )
-            
-            StatCard(
-                title: "Streak",
-                value: "\(activeHabits.map { $0.currentStreak() }.max() ?? 0)",
-                icon: "flame",
-                color: .orange
-            )
         }
+        return currentLongest
     }
 }
 
@@ -61,32 +117,43 @@ struct StatCard: View {
     let title: String
     let value: String
     let icon: String
-    let color: Color
+    var iconVariation: Double = 1.0
+    let caption: LocalizedStringKey?
     
     var body: some View {
         VStack {
             HStack {
-                Image(systemName: icon)
+                Image(systemName: icon, variableValue: iconVariation)
+                    .dynamicTypeSize(.large)
                    // .foregroundStyle(color)
                 Text(title)
+//                    .frame(maxHeight: 20)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .lineLimit(1)
                 Spacer()
             }
             
-            Text(value)
-                .font(.title2)
-                .fontWeight(.bold)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            HStack(alignment: .bottom) {
+                Text(value)
+                    .dynamicTypeSize(.xxLarge)
+                    .lineLimit(1)
+//                    .frame(maxWidth: .infinity, alignment: .leading)
+                
+                if let caption {
+                    Spacer()
+                    Text(caption)
+                        .font(.caption2.italic())
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(2)
+                    
+                }
+            }
         }
         .padding()
-        .frame(maxWidth: .infinity)
-        
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(color, lineWidth: 0.5)
-        )
-        .glassEffect(.regular.tint(color.opacity(0.05)), in: .rect(cornerRadius: 16))
+//        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .glassEffect(in: .rect)
+        .cornerRadius(16)
         
     }
 }
@@ -103,11 +170,32 @@ struct StatCard: View {
 }
 
 #Preview("Stat Card") {
-    StatCard(
-        title: "Today",
-        value: "75%",
-        icon: "checkmark.circle",
-        color: .green
-    )
-    .padding()
+    VStack {
+        HStack {
+            StatCard(
+                title: "Today",
+                value: "40%",
+                icon: "ellipsis.calendar",
+                iconVariation: 0.4,
+                caption: "Done"
+            )
+            
+            StatCard(
+                title: "Habits",
+                value: "20",
+                icon: "square.grid.2x2",
+                iconVariation: 1,
+                caption: "Active"
+            )
+            
+            StatCard(
+                title: "Streak",
+                value: "90",
+                icon: "flame",
+                caption: "Longest"
+            )
+        }
+        .padding()
+            
+    }
 }

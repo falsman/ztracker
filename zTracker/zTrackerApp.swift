@@ -11,39 +11,33 @@ import Combine
 import AppIntents
 import CoreSpotlight
 import UserNotifications
-internal import UniformTypeIdentifiers
+import UniformTypeIdentifiers
 
 @main
 struct zTrackerApp: App {
-    @StateObject private var appState = AppState()
+    @AppStorage("sleepHabit") private var sleepHabitID: String = ""
+    @AppStorage("mindfulHabit") private var mindfulHabitID: String = ""
+
     @State private var container: ModelContainer?
     @State private var needsPicker = DataStoreManager.shared.needsLocationPicker
     
     var sharedContainer: ModelContainer?
     private let notificationDelegate = NotificationDelegate()
 
-    
-    init() {
-        UNUserNotificationCenter.current().delegate = notificationDelegate
-    }
+    init() { UNUserNotificationCenter.current().delegate = notificationDelegate }
     
     var body: some Scene {
         WindowGroup {
             if let container = container {
                 ContentView()
-                    .environmentObject(appState)
                     .modelContainer(container)
                     .task { HabitEntity.indexAllHabits() }
+                                
             } else if !needsPicker {
-                VStack {
-                    Text("Loading Data...")
-                        .font(.headline)
-                        .onAppear { setupContainer() }
-                }
+                VStack { Text("Loading Data...").font(.headline).onAppear { setupContainer() } }
             } else {
                 VStack {
-                    Text("No data folder selected")
-                        .font(.headline)
+                    Text("No data folder selected").font(.headline)
                     ChooseFolderButton { url in
                         do {
                             try DataStoreManager.shared.saveLocation(url)
@@ -65,6 +59,10 @@ struct zTrackerApp: App {
             
             container = tempContainer
             
+            #if DEBUG
+            SampleDataSeeder.seedIfNeeded(context: tempContainer.mainContext)
+            #endif
+            
             Task { await createDefaultHabits(in: tempContainer.mainContext) }
         } catch {
             needsPicker = true
@@ -80,40 +78,41 @@ struct zTrackerApp: App {
         print("Creating default habits...")
         
         let sleepHours = Habit(
-            id: UUID(uuidString: "A7F4E6F1-0F5C-4A6B-9F1E-2B6E4E0A9C01")!,
-            title: "Sleep Hours",
-            type: .duration,
-            color: RGBValues(r: 109/255, g: 124/255, b: 255/255),
-            icon: "moon.zzz"
-            )
+            id: UUID(),
+            title: "Sleep Duration",
+            type: .duration(goal: .init(target: (8 * 60 * 60), frequency: .daily)),
+            color: "indigo",
+            icon: "bed.double",
+            sortIndex: 1
+        )
         let mindfulMins = Habit(
-            id: UUID(uuidString: "D2C9E8A4-3C5E-4E77-9F2A-8F6D1C7A0B11")!,
+            id: UUID(),
             title: "Mindful Minutes",
-            type: .duration,
-            color: RGBValues(r: 0/255, g: 195/255, b: 208/255),
-            icon: "apple.meditate"
-            )
-        
+            type: .duration(goal: .init(target: 60, frequency: .daily)),
+            color: "mint",
+            icon: "apple.meditate",
+            sortIndex: 2
+        )
+                
         context.insert(sleepHours)
         context.insert(mindfulMins)
+        
+        do {
+            try context.save()
             
-            do {
-                try context.save()
-                print("Default habits created")
-            } catch { print("Failed to save default habits: \(error)") }
-        }
-    }
+            print("sleep habit ID")
+            sleepHabitID = sleepHours.id.uuidString
+            print(sleepHabitID)
+            print("mindful habit ID")
+            mindfulHabitID = mindfulMins.id.uuidString
+            print(mindfulHabitID)
 
-class AppState: ObservableObject {
-    @Published var selectedTab: Tab = .today
-    @Published var showingHabitEditor = false
-    @Published var showingSettings = false
-    @Published var selectedHabit: Habit? = nil
-    
-    enum Tab {
-        case today, habits, insights, settings
+        }
+        catch { print("Failed to save default habits: \(error)") }
+        
     }
 }
+
 
 struct ChooseFolderButton: View {
     let onPicked: (URL) -> Void

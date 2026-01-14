@@ -10,17 +10,18 @@ import HealthKit
 import SwiftUI
 import SwiftData
 
-actor HealthKitManager {
-    static let shared = HealthKitManager()
+class HealthKitManager {
+    @AppStorage("healthKitEnabled") private var healthKitEnabled = false
+    
+    nonisolated(unsafe) static let shared = HealthKitManager()
     
     private let healthStore = HKHealthStore()
-    private var healthKitEnabled = false
     
     private init() {}
     
     func requestAuthorization() async throws {
+        print("Checking HK Authorization")
         guard HKHealthStore.isHealthDataAvailable() else {
-            print("Health Data Not Avaialable")
             return
         }
         
@@ -43,12 +44,13 @@ extension HealthKitManager {
         
         let predicate = HKQuery.predicateForSamples(
             withStart: Calendar.current.date(bySettingHour: 12, minute: 0, second: 0, of: yesterday)!,
-            end: .now,
+            end: Calendar.current.date(bySettingHour: 12, minute: 0, second: 0, of: date)!,
         )
         
         let asleepValues: Set<HKCategoryValueSleepAnalysis> = [
             .asleepCore, .asleepDeep, .asleepREM, .asleepUnspecified
         ]
+        print(asleepValues)
         
         return try await withCheckedThrowingContinuation { continuation in
             let query = HKSampleQuery(
@@ -59,8 +61,10 @@ extension HealthKitManager {
             ) {_, samples, error in
                 if let error {
                     continuation.resume(throwing: error)
+                    print("HK Sleep Error: \(error)")
                     return
                 }
+                print(samples ?? "no samples found")
                 
                 let totalSeconds = (samples as? [HKCategorySample] ?? [])
                     .filter { asleepValues.contains(HKCategoryValueSleepAnalysis(rawValue: $0.value)!) }
@@ -105,62 +109,33 @@ extension HealthKitManager {
     }
 }
 
-public func syncHealthKitData(for date: Date, in context: ModelContext) async throws {
-    let habits = try context.fetch(FetchDescriptor<Habit>(
-                                   predicate: #Predicate {
-        $0.title == "Sleep Hours" ||
-        $0.title == "Mindful Minutes"
-    }))
-    print("FOund Habits")
+func syncHealthKitData(for date: Date, in context: ModelContext) async throws {
+    let sleepID = UserDefaults.standard.string(forKey: "sleepHabit") ?? ""
+    let mindfulID = UserDefaults.standard.string(forKey: "mindfulHabit") ?? ""
     
-    guard
-        let sleepHabit = habits.first(where: { $0.title == "Sleep Hours" }),
-        let mindfulHabit = habits.first(where: { $0.title == "Mindful Minutes" })
-    else { return }
-    print("Set habits")
+    guard let sleepUUID = UUID(uuidString: sleepID),
+          let mindfulUUID = UUID(uuidString: mindfulID) else { return }
     
-    print("Loading HK")
-    let healthKit = HealthKitManager.shared
-    print("HK Loaded")
-    let sleep = try await healthKit.fetchSleepHours(for: date)
-    print("Sleep data loaded")
-    let mindful = try await healthKit.fetchMindfulnessMinutes(for: date)
-    print("Mindfulness data loaded")
+    let descriptor = FetchDescriptor<Habit>(
+        predicate: #Predicate { $0.id == sleepUUID || $0.id == mindfulUUID }
+    )
+    let habits = try context.fetch(descriptor)
     
-    let day = Calendar.current.startOfDay(for: date)
+    guard let sleepHabit = habits.first(where: { $0.id == sleepUUID }),
+          let mindfulHabit = habits.first(where: { $0.id == mindfulUUID }) else { return }
+    print("Habits Found: \(habits[0].title), \(habits[1].title)")
     
-    for (habit, duration) in [
-        (sleepHabit, sleep),
-        (mindfulHabit, mindful)
-    ] {
-        let habitID = habit.id
-        let descriptor = FetchDescriptor<HabitEntry>(
-            predicate: #Predicate {
-                $0.habit?.id == habitID &&
-                $0.date == day
-            }
-            )
-        
-        if let entry = try context.fetch(descriptor).first {
-            print(entry.habit?.title ?? "default value")
-            entry.time = duration
-            entry.updatedAt = .now
-            print("Entry Updated: \(entry.durationSeconds, default: "default value")")
-        } else {
-            let entry = HabitEntry(
-                id: UUID(),
-                date: day
-            )
-            entry.time = duration
-            entry.updatedAt = .now
-            entry.habit = habit
-            print(entry.habit?.title ?? "default value")
-            
-            context.insert(entry)
-            print("Entry Inserted: \(entry.durationSeconds, default: "default value")")
-        }
-    }
+    let sleepDuration = try await HealthKitManager.shared.fetchSleepHours(for: date)
+    let mindfulDuration = try await HealthKitManager.shared.fetchMindfulnessMinutes(for: date)
+    print("Sleep: \(sleepDuration), Mindful: \(mindfulDuration)")
+    
+    let startOfDate = Calendar.current.startOfDay(for: date)
+    
+    _ = sleepHabit.createOrUpdateEntry(for: startOfDate, time: sleepDuration, updatedAt: .now)
+    _ = mindfulHabit.createOrUpdateEntry(for: startOfDate, time: mindfulDuration, updatedAt: .now)
+    print("Entries Created")
+    
     try context.save()
-    print("Context Saved")
 }
+
 #endif

@@ -61,7 +61,7 @@ struct HabitNumericSnippet: View {
     
     var body: some View {
         VStack {
-            Text(String(format: "%.2f", value))
+            Text(String(format: "%.1f", value))
                 .font(.largeTitle)
                 .fontWeight(.bold)
             

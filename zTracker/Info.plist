@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
-<dict/>
+<dict>
+	<key>NSHealthShareUsageDescription</key>
+	<string>We need access to your health data to track mindfulness and sleep patterns.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>We need permission to save your health data.</string>
+</dict>
 </plist>

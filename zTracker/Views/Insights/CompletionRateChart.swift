@@ -53,7 +53,7 @@ struct CompletionRateChart: View {
                         x: .value("Date", data.date, unit: .day),
                         y: .value("Rate", data.rate)
                         )
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(.theme)
                     
                     AreaMark(
                         x: .value("Date", data.date, unit: .day),
@@ -102,7 +102,7 @@ struct CompletionRateChart: View {
     }
 }
 
-#Preview {
+#Preview("Completion Rate Chart") {
     let container = PreviewHelpers.previewContainer
     let habits = PreviewHelpers.makeHabits()
     
@@ -110,4 +110,19 @@ struct CompletionRateChart: View {
     
     return CompletionRateChart(habits: habits, days: 80)
         .modelContainer(container)
+}
+
+#Preview("Insights View") {
+    NavigationStack {
+        let container = PreviewHelpers.previewContainer
+        
+        let habits = PreviewHelpers.makeHabits()
+        habits.forEach { container.mainContext.insert($0) }
+        
+        try? container.mainContext.save()
+        
+        return InsightsView()
+            .modelContainer(container)
+            
+    }
 }

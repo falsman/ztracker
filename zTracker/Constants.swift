@@ -7,6 +7,6 @@
 
 import Foundation
 
-let today: Date = Calendar.current.startOfDay(for: Date())
-let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: today)!
+nonisolated(unsafe) var today: Date = Calendar.current.startOfDay(for: Date())
+nonisolated(unsafe) var yesterday: Date = Calendar.current.date(byAdding: .day, value: -1, to: today)!
 

@@ -9,104 +9,105 @@ import SwiftUI
 import SwiftData
 import UserNotifications
 
-struct HabitsView: View {
-    @EnvironmentObject private var appState: AppState
-    @Environment(\.modelContext) private var modelContext
-    
-    @Query(filter: #Predicate<Habit> { !$0.isArchived })
-    private var activeHabits: [Habit]
-    
-    @Query(filter: #Predicate<Habit> { $0.isArchived })
-    private var archivedHabits: [Habit]
-    
-    @State private var showingHabitEditor = false
+enum HabitMode {
+    case active
+    case archived
+}
 
-    @State private var selectedHabit: Habit?
+struct HabitsView: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var context
     
-    var body: some View {
-        NavigationSplitView {
-            listContent
-        } detail: {
-            detailContent
+    @AppStorage("habitsTimeframe") private var summaryTimeframe: Timeframe = .week
+    
+    @Query(sort: \Habit.sortIndex) private var allHabits: [Habit]
+
+    var shownHabits: [Habit] {
+        allHabits.filter {
+            habitMode == .active ? !$0.isArchived : $0.isArchived
         }
+    }
+    
+    @State private var selectedHabit: Habit?
+    @State private var showingHabitAdder = false
+    
+    @State private var habitToEdit: Habit?
+    
+    @State private var habitMode: HabitMode = .active
+
+    var body: some View {
+        NavigationSplitView { listContent }
+        detail: { detailContent }
     }
     
     private var listContent: some View {
         List(selection: $selectedHabit) {
-            activeHabitsSection
-            
-            if !archivedHabits.isEmpty {
-                archivedSection
+            ForEach(shownHabits) { habit in HabitRow(habit: habit) { selectedHabit = habit }
+                
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color(.clear))
+                
+                .contextMenu {
+                    Button("Edit Habit", systemImage: "pencil") {
+                        habitToEdit = habit
+                    }
+                    .buttonStyle(.glass)
+                    .tint(.blue)
+                    
+                    Divider()
+                    
+                    ToggleHabitArchive(habit: habit)
+                }
             }
+            .onMove { from, to in
+                var reordered = shownHabits
+                reordered.move(fromOffsets: from, toOffset: to)
+
+                for (newIndex, habit) in reordered.enumerated() {
+                    habit.sortIndex = newIndex
+                }
+            }
+            
         }
-        .navigationDestination(for: Habit.self) { habit in
-            HabitDetailView(habit: habit)
-        }
-        .navigationTitle("Habits")
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        
+        .navigationTitle(habitMode == .active ? "Habits" : "Archived Habits")
+        .navigationSplitViewColumnWidth(
+            min: 150, ideal: 200, max: 400)
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        .background(movingLinearGradient(selectedColor: .theme))
+        #endif
+        
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button(action: { showingHabitEditor = true }) {
+                Button(action: { showingHabitAdder = true }) {
                     Label("Add Habit", systemImage: "plus")
                 }
             }
-        }
-        .sheet(isPresented: $showingHabitEditor) { HabitEditorView() }
-    }
-    
-    private var activeHabitsSection: some View {
-        Section("Active Habits") {
-            ForEach(activeHabits) { habit in
-                NavigationLink(value: habit) {
-                    HabitRow(habit: habit)
+            ToolbarItem(placement: .secondaryAction) {
+                Button(action: { habitMode = habitMode == .active ? .archived : .active }) {
+                    Label(
+                        habitMode == .active ? "Show Archived" : "Show Active",
+                        systemImage: habitMode == .active ? "archivebox" : "square.grid.2x2"
+                    )
                 }
-                    .swipeActions(edge: .trailing) {
-                        editHabit(for: habit)
-                    }
-                    .swipeActions(edge: .leading) {
-                        archiveHabit(for: habit)
-                    }
-                    .contextMenu {
-                        editHabit(for: habit)
-                        Divider()
-                        archiveHabit(for: habit)
-                    }
             }
-        }
-    }
-    
-    private var archivedSection: some View {
-        Section("Archived") {
-            NavigationLink { ArchiveView() } label: {
-                HStack {
-                    Text("View Archived Habits")
-                    Spacer()
-                    Text("\(archivedHabits.count)")
-                        .foregroundStyle(.secondary)
+            ToolbarItem(placement: .secondaryAction) {
+                Picker("Summary Range", systemImage: "ellipsis.calendar", selection: $summaryTimeframe) {
+                    ForEach(Timeframe.allCases) { timeframe in
+                        Text(timeframe.rawValue)
+                            .tag(timeframe)
+                    }
                 }
             }
         }
-    }
-    
-    @ViewBuilder
-    private func archiveHabit(for habit: Habit) -> some View {
-        Button {
-            Task { habit.isArchived.toggle() }
-        } label: {
-            Label("Archive", systemImage: "archivebox")
-        }
-        .buttonStyle(.glass)
-        .tint(.orange)
-    }
-    
-    @ViewBuilder
-    private func editHabit(for habit: Habit) -> some View {
-        Button {
-            showingHabitEditor = true
-        } label: {
-            Label("Edit", systemImage: "pencil")
-        }
-        .buttonStyle(.glass)
-        .tint(.blue)
+        .toolbarBackground(.hidden)
+        
+        .sheet(isPresented: $showingHabitAdder) { HabitEditorView() }
+        .sheet(item: $habitToEdit) { habit in HabitEditorView(habit: habit) }
+
     }
     
     private var detailContent: some View {
@@ -114,32 +115,47 @@ struct HabitsView: View {
             if let habit = selectedHabit {
                 HabitDetailView(habit: habit)
             } else {
-                ContentUnavailableView(
-                    "Select a Habit",
-                    systemImage: "square.grid.2x2",
-                    description: Text("Choose a habit to view its deatails and history")
-                )
+                ContentUnavailableView {
+                    Label("Select a Habit", systemImage: "square.grid.2x2")
+                } description: {
+                    Text("Choose a habit to view its deatails and history.")
+                }
             }
         }
     }
 }
 
-struct HabitRow: View {
+struct ToggleHabitArchive: View {
     let habit: Habit
-
+    
     var body: some View {
+        Button(habit.isArchived ? "Unarchive Habit" : "Archive Habit", systemImage: habit.isArchived ? "arrow.up.bin" : "archivebox") {
+            Task { habit.isArchived.toggle() }
+        }
+    }
+}
+
+struct HabitRow: View {
+    @AppStorage("habitsTimeframe") private var summaryTimeframe: Timeframe = .week
+
+    let habit: Habit
+    let onTap: () -> Void
+    
+    var body: some View {
+        Button(action: onTap) {
             HStack {
                 if let icon = habit.icon {
-                    Image(systemName: icon)
-                        .font(.title3)
-                        .foregroundStyle(Color(habit.color.color))
-                        .frame(width: 30, height: 30)
+                    ZStack {
+                        Circle()
+                            .trim(from: 0, to: habit.completionRate(days: summaryTimeframe.days))
+                            .fill(Color(habit.swiftUIColor).secondary)
+                            .frame(width: 40, height: 40)
+                        Image(systemName: icon)
+                    }
                 }
                 
                 VStack(alignment: .leading) {
                     Text(habit.title)
-                        .font(.headline)
-                    
                     Text(habit.type.displayName)
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -147,28 +163,36 @@ struct HabitRow: View {
                 
                 Spacer()
                 
+                let averageInfo = HabitAverage(habit: habit, days: summaryTimeframe.days)
                 VStack(alignment: .trailing) {
-                    Text("\(habit.currentStreak())")
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                    
-                    Text("days")
+                    Text(averageInfo.value)
+                    Text(averageInfo.caption)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                .padding(.horizontal)
             }
-            .padding(.vertical)
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .topLeading)
+            .glassEffect(in: .rect(cornerRadius: 16))
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
     }
 }
 
-#Preview("Empty State") {
-    HabitsView()
-        .modelContainer(PreviewHelpers.previewContainer)
-        .environmentObject(AppState())
+#Preview("Content View") {
+    let container = PreviewHelpers.previewContainer
+
+    let habits = PreviewHelpers.makeHabits()
+    habits.forEach { container.mainContext.insert($0) }
+
+    try? container.mainContext.save()
+
+    return ContentView()
+        .modelContainer(container)
 }
 
-#Preview("With Sample Data") {
+#Preview("Habits View") {
     let container = PreviewHelpers.previewContainer
     
     let habits = PreviewHelpers.makeHabits()
@@ -178,5 +202,16 @@ struct HabitRow: View {
     
     return HabitsView()
         .modelContainer(container)
-        .environmentObject(AppState())
+        
+}
+
+#Preview("Habit Row") {
+    let container = PreviewHelpers.previewContainer
+    let habits = PreviewHelpers.makeHabits()
+    
+    habits.forEach { container.mainContext.insert($0) }
+    try? container.mainContext.save()
+    
+    return HabitRow(habit: habits[2], onTap: {})
+        .modelContainer(container)
 }

@@ -17,6 +17,7 @@ struct LogBooleanHabitIntent: AppIntent {
     nonisolated(unsafe) static var isDiscoverable: Bool = true
     
     @Parameter(title: "Habit") var habit: HabitEntity
+    @Parameter(title: "Completion", default: true) var completion: Bool
     @Parameter(title: "Date", default: today) var date: Date
     
     func perform() async throws -> some IntentResult & ProvidesDialog & ShowsSnippetView {
@@ -31,14 +32,14 @@ struct LogBooleanHabitIntent: AppIntent {
         guard case .boolean = actualHabit.type else { throw IntentError.wrongHabitType }
         
         let targetDate = Calendar.current.startOfDay(for: date)
-        _ = actualHabit.createOrUpdateEntry(for: targetDate, completed: true)
+        _ = actualHabit.createOrUpdateEntry(for: targetDate, completed: completion, updatedAt: .now)
         
         try context.save()
         
         let formattedDate = date.formatted(date: .abbreviated, time: .omitted)
         return .result(
-            dialog: "Logged \(habit.title) for \(formattedDate) as completed.",
-            view: HabitCompletionSnippet(habitTitle: habit.title, completed: true)
+            dialog: "Entry Date: \(formattedDate)",
+            view: HabitCompletionSnippet(habitTitle: habit.title, completed: completion)
         )
     }
 }
@@ -69,15 +70,14 @@ struct LogDurationHabitIntent: AppIntent {
         let timeDuration = Duration.seconds(seconds)
         
         let targetDate = Calendar.current.startOfDay(for: date)
-        _ = actualHabit.createOrUpdateEntry(for: targetDate, time: timeDuration)
+        _ = actualHabit.createOrUpdateEntry(for: targetDate, time: timeDuration, updatedAt: .now)
         
         try context.save()
         
-        let formattedDuration = duration.formatted()
         let formattedDate = date.formatted(date: .abbreviated, time: .omitted)
         
         return .result(
-            dialog: "Logged \(habit.title) for \(formattedDate) as \(formattedDuration).",
+            dialog: "Entry Date: \(formattedDate)",
             view: HabitDurationSnippet(habitTitle: habit.title, duration: timeDuration)
         )
     }
@@ -104,17 +104,17 @@ struct LogRatingHabitIntent: AppIntent {
         )
         
         guard let actualHabit = try context.fetch(descriptor).first else { throw IntentError.habitNotFound }
-        guard case .rating(let min, let max) = actualHabit.type else { throw IntentError.wrongHabitType }
+        guard case .rating(let min, let max, _) = actualHabit.type else { throw IntentError.wrongHabitType }
         guard value >= min && value <= max else { throw IntentError.valueOutOfRange(min: min, max: max) }
         
         let targetDate = Calendar.current.startOfDay(for: date)
-        _ = actualHabit.createOrUpdateEntry(for: targetDate, ratValue: value)
+        _ = actualHabit.createOrUpdateEntry(for: targetDate, ratValue: value, updatedAt: .now)
         
         try context.save()
         
         let formattedDate = date.formatted(date: .abbreviated, time: .omitted)
         return .result(
-            dialog: "Logged \(habit.title) for \(formattedDate) as \(value)",
+            dialog: "Entry Date: \(formattedDate)",
             view: HabitRatingSnippet(habitTitle: habit.title, rating: value, maxRating: max)
         )
     }
@@ -140,17 +140,17 @@ struct LogNumericHabitIntent: AppIntent {
         )
         
         guard let actualHabit = try context.fetch(descriptor).first else { throw IntentError.habitNotFound }
-        guard case .numeric(let min, let max, let unit) = actualHabit.type else { throw IntentError.wrongHabitType }
+        guard case .numeric(let min, let max, let unit, _) = actualHabit.type else { throw IntentError.wrongHabitType }
         guard value >= min && value <= max else { throw IntentError.valueOutOfRange(min: Int(min), max: Int(max)) }
         
         let targetDate = Calendar.current.startOfDay(for: date)
-        _ = actualHabit.createOrUpdateEntry(for: targetDate, numValue: value)
+        _ = actualHabit.createOrUpdateEntry(for: targetDate, numValue: value, updatedAt: .now)
         
         try context.save()
         
         let formattedDate = date.formatted(date: .abbreviated, time: .omitted)
         return .result(
-            dialog: "Logged \(habit.title) for \(formattedDate) as \(value)",
+            dialog: "Entry Date: \(formattedDate)",
             view: HabitNumericSnippet(habitTitle: habit.title, value: value, unit: unit)
             )
     }
@@ -187,7 +187,7 @@ struct AddNoteToHabitIntent: AppIntent {
         try context.save()
         
         let formattedDate = date.formatted(date: .abbreviated, time: .omitted)
-        return .result(dialog: "Added note to \(habit.title) for \(formattedDate): \n\(text)")
+        return .result(dialog: "Entry Date: \(formattedDate)")
     }
 }
 

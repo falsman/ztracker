@@ -109,27 +109,34 @@ extension HabitEntity {
         do {
             let container = try getModelContainer()
             let context = ModelContext(container)
-            
-            let descriptor = FetchDescriptor<Habit>(
-                predicate: #Predicate { !$0.isArchived }
-            )
-            
-            let habits = try context.fetch(descriptor)
-            let entities = habits.map { HabitEntity(from: $0) }
-            
-            let items = entities.map { entity -> CSSearchableItem in
-                let item = CSSearchableItem(
-                    uniqueIdentifier: entity.id.uuidString,
+
+            let allHabits = try context.fetch(FetchDescriptor<Habit>())
+
+            let activeHabits = allHabits.filter { !$0.isArchived }
+
+            let items = activeHabits.map { habit -> CSSearchableItem in
+                let entity = HabitEntity(from: habit)
+                return CSSearchableItem(
+                    uniqueIdentifier: habit.id.uuidString,
                     domainIdentifier: "com.ztracker.habit",
                     attributeSet: entity.attributeSet()
-                    )
-                return item
+                )
             }
-            
-            CSSearchableIndex.default().indexSearchableItems(items)
-        } catch { print("Failed to index habits in Spotlight: \(error)") }
+
+            let allIDs = Set(allHabits.map { $0.id.uuidString })
+            let activeIDs = Set(activeHabits.map { $0.id.uuidString })
+            let removedIDs = Array(allIDs.subtracting(activeIDs))
+
+            let index = CSSearchableIndex.default()
+            index.indexSearchableItems(items)
+            index.deleteSearchableItems(withIdentifiers: removedIDs)
+
+        } catch {
+            print("Failed to sync habits with Spotlight: \(error)")
+        }
     }
 }
+
 
 //struct OpenHabitIntent: AppIntent, OpenIntent {
 //    static var title: LocalizedStringResource = "Open Habit"

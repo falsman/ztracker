@@ -13,40 +13,45 @@ struct EntryView: View {
     let entry: HabitEntry
     
     var body: some View {
-        VStack(alignment: .leading) {
+        VStack(alignment: .trailing) {
             switch habit.type {
-            case .boolean:
+            case .boolean(_):
                 HStack {
-                    Image(systemName: entry.completed == true ? "checkmark.circle.dotted" : "circle.dotted")
-                        .foregroundStyle(entry.completed == true ? .green: .secondary)
-                    Text(entry.completed == true ? "Completed" : "Not Completed")
+                    Image(systemName: entry.completed == true ? "checkmark.circle" : "circle.dotted")
+                    Text(entry.completed == true ? "Completed" : "Incomplete")
                         .font(.subheadline)
                 }
-            case .duration:
+                
+            case .duration(_):
                 if let duration = entry.time {
                     HStack {
                         Image(systemName: "clock")
-                        Text(duration.formatted(.time(pattern: .hourMinute)))
+                        Text(duration.formatted(
+                            .units(
+                                allowed: [.hours, .minutes, .seconds, .milliseconds],
+                                width: .abbreviated,
+                                maximumUnitCount: 2
+                                  )))
                             .font(.subheadline)
                     }
                 }
                 
-            case .rating(_, let max):
+            case .rating(_, let max, _):
                 if let rating = entry.ratValue {
                     HStack {
                         ForEach(1...max, id: \.self) { index in
                             Image(systemName: index <= rating ? "star.fill" : "star")
-                                .font(.caption)
+                                .font(.subheadline)
                         }
                     }
                 }
+
                 
-            case .numeric(_, _, let unit):
+            case .numeric(_, _, let unit, _):
                 if let value = entry.numValue {
                     HStack {
                         Image(systemName: "number")
-                            .foregroundStyle(.purple)
-                        Text(String(format: "%.2f %@", value, unit))
+                        Text(String(format: "%.1f %@", value, unit))
                             .font(.subheadline)
                     }
                 }
@@ -59,11 +64,12 @@ struct EntryView: View {
                     .foregroundStyle(.secondary)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .trailing)
     }
 }
 
 
-#Preview("With Sample Data") {
+#Preview("Habit Entries VStack") {
     let container = PreviewHelpers.previewContainer
     
     let habits = PreviewHelpers.makeHabits()
@@ -71,10 +77,29 @@ struct EntryView: View {
     
     try? container.mainContext.save()
     
-    let habitToShow = habits[1]
-    let entryToShow = habitToShow.entries.first!
+    let firstFourHabits = Array(habits.prefix(4))
     
-    return EntryView(habit: habitToShow, entry: entryToShow)
-        .modelContainer(container)
-        .environmentObject(AppState())
+    return VStack {
+        ForEach(firstFourHabits, id: \.id) { habit in
+            if let entry = habit.entries.first {
+                EntryView(habit: habit, entry: entry)
+            }
+            Divider()
+        }
+    }
+    .modelContainer(container)
+    
+}
+
+#Preview("Today View") {
+        let container = PreviewHelpers.previewContainer
+        
+        let habits = PreviewHelpers.makeHabits()
+        habits.forEach { container.mainContext.insert($0) }
+        
+        try? container.mainContext.save()
+        
+        return TodayView()
+            .modelContainer(container)
+            
 }

@@ -177,6 +177,9 @@ struct EntryEditorView: View {
         timeDuration = .seconds(totalSeconds)
     }
     
+    /// Saves the current editor state to the habit as a create-or-update entry for `date` and then dismisses the editor.
+    ///
+    /// The entry is saved using only the values applicable to the habit's type (boolean, duration, rating, numeric); an empty note is omitted. After persisting the entry the view is dismissed.
     @MainActor
     private func saveEntry() {
         Task {

@@ -21,6 +21,10 @@ struct PreviewHelpers {
         }
     }()
     
+    /// Parses a date string in the "yyyy-MM-dd" format into a `Date`.
+    /// - Parameter stringDate: A date string formatted as `yyyy-MM-dd`.
+    /// - Returns: The parsed `Date`.
+    /// - Note: Crashes at runtime if `stringDate` does not match the `yyyy-MM-dd` format.
     static func date(stringDate: String) -> Date {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"

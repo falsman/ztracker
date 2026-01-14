@@ -17,7 +17,9 @@ class HealthKitManager {
     
     private let healthStore = HKHealthStore()
     
-//    private init() {}
+/// Requests authorization to read sleep analysis and mindful session data from HealthKit.
+    /// Exits immediately if HealthKit is not available on the device. On successful authorization, sets `healthKitEnabled` to `true`.
+    /// - Throws: An error if the HealthKit authorization request fails.
     
     func requestAuthorization() async throws {
         print("Checking HK Authorization")
@@ -109,6 +111,13 @@ extension HealthKitManager {
     }
 }
 
+/// Synchronizes HealthKit sleep and mindfulness data for a given date into the provided model context.
+/// 
+/// Reads habit IDs from UserDefaults keys `sleepHabit` and `mindfulHabit`, resolves them to `UUID`s, fetches the corresponding `Habit` entities, obtains durations from HealthKit for the specified date, creates or updates daily entries on each habit with those durations, and saves the context. If the stored IDs are missing or cannot be parsed as UUIDs, the function exits without making changes.
+/// - Parameters:
+///   - date: The date for which to fetch HealthKit data and create/update habit entries (day is aligned to the calendar day when storing entries).
+///   - context: The `ModelContext` used to fetch `Habit` entities and persist changes.
+/// - Throws: Propagates errors from fetching habits, HealthKit queries, or saving the context.
 func syncHealthKitData(for date: Date, in context: ModelContext) async throws {
     let sleepID = UserDefaults.standard.string(forKey: "sleepHabit") ?? ""
     let mindfulID = UserDefaults.standard.string(forKey: "mindfulHabit") ?? ""

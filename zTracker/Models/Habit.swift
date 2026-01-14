@@ -53,12 +53,28 @@ final class Habit {
         self.metadata = metadata
     }
     
+    /// Finds the habit entry matching the calendar day of the given date.
+    /// - Parameters:
+    ///   - date: The date whose calendar day is used to locate an entry.
+    /// - Returns: The `HabitEntry` for that day if one exists, `nil` otherwise.
     func entry(for date: Date) -> HabitEntry? {
         let targetDay = Calendar.current.startOfDay(for: date)
         
         return entries.first { entry in Calendar.current.startOfDay(for: entry.date) == targetDay }
     }
     
+    /// Creates a new HabitEntry for the specified day or updates the existing entry for that day with the provided values.
+    /// 
+    /// For an existing entry, only non-nil parameters overwrite the corresponding fields; the entry's `updatedAt` is set to the current time.
+    /// For a new entry, the provided parameter values (including `nil`) are used to initialize the entry and `updatedAt` is set to the current time.
+    /// - Parameters:
+    ///   - date: The date for the entry (defaults to today). The entry is matched by start-of-day.
+    ///   - completed: If non-nil when updating, sets the entry's completion state; when creating, sets the initial completion state.
+    ///   - time: If non-nil when updating, sets the entry's duration; when creating, sets the initial duration.
+    ///   - numValue: If non-nil when updating, sets the entry's numeric value; when creating, sets the initial numeric value.
+    ///   - ratValue: If non-nil when updating, sets the entry's rating value; when creating, sets the initial rating value.
+    ///   - note: If non-nil when updating, sets the entry's note; when creating, sets the initial note.
+    /// - Returns: The created or updated `HabitEntry`.
     func createOrUpdateEntry(for date: Date = today, completed: Bool? = false, time: Duration? = nil, numValue: Double? = nil, ratValue: Int? = nil, note: String? = nil) -> HabitEntry {
         let calendar = Calendar.current
         let targetDay = calendar.startOfDay(for: date)
@@ -152,4 +168,3 @@ final class Habit {
         return values.isEmpty ? 0 : values.reduce(0, +) / Double(values.count)
     }
 }
-

@@ -50,6 +50,12 @@ struct QuickEntryEditorView: View {
         durationValue = Int((entry?.time?.components.seconds ?? 0) / 60)
     }
     
+    /// Create or update the habit entry for the view's date using the provided field values.
+    /// - Parameters:
+    ///   - completed: `true` to mark the entry completed, `false` to mark incomplete, or `nil` to leave the completion state unchanged.
+    ///   - rating: The rating value to save, or `nil` to leave the rating unchanged.
+    ///   - numeric: The numeric value to save, or `nil` to leave the numeric value unchanged.
+    ///   - durationSeconds: Duration in seconds to save as the entry's time, or `nil` to leave the time unchanged.
     @MainActor
     private func saveEntry(
         completed: Bool? = nil,

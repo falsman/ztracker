@@ -9,6 +9,11 @@ import UserNotifications
 import SwiftData
 
 class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
+    /// Handles a notification delivered while the app is in the foreground.
+    /// Invokes the completion handler to present a banner and play a sound.
+    /// - Parameters:
+    ///   - willPresent: The notification being delivered.
+    ///   - completionHandler: Called with presentation options to control how the notification is presented; this implementation requests `.banner` and `.sound`.
     func userNotificationCenter(
         _ _: UNUserNotificationCenter,
         willPresent: UNNotification,

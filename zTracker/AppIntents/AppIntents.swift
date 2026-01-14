@@ -20,6 +20,13 @@ struct LogBooleanHabitIntent: AppIntent {
     @Parameter(title: "Completion", default: true) var completion: Bool
     @Parameter(title: "Date", default: today) var date: Date
     
+    /// Logs a boolean completion for the intent's habit on the specified date.
+    /// 
+    /// Finds the habit by its identifier, validates that it is a boolean habit, creates or updates the entry for the day, and saves the context.
+    /// - Returns: An intent result containing a dialog with the formatted date and a `HabitCompletionSnippet` view.
+    /// - Throws:
+    ///   - `IntentError.habitNotFound` if the habit with the provided identifier does not exist.
+    ///   - `IntentError.wrongHabitType` if the habit is not of boolean type.
     func perform() async throws -> some IntentResult & ProvidesDialog & ShowsSnippetView {
         let container = try getModelContainer()
         let context = ModelContext(container)
@@ -54,6 +61,13 @@ struct LogDurationHabitIntent: AppIntent {
     @Parameter(title: "Duration") var duration: Measurement<UnitDuration>
     @Parameter(title: "Date", default: today) var date: Date
     
+    /// Logs a time-duration entry for the specified habit on the given date.
+    /// - Parameters:
+    ///   - habit: The habit to log the duration for.
+    ///   - duration: The duration to record.
+    ///   - date: The date for which to record the duration.
+    /// - Throws: `IntentError.habitNotFound` if the habit cannot be located; `IntentError.wrongHabitType` if the habit is not a duration-type habit.
+    /// - Returns: An intent result presenting a confirmation dialog with the entry date and a `HabitDurationSnippet` view showing the recorded duration.
     func perform() throws -> some IntentResult & ProvidesDialog & ShowsSnippetView {
         let container = try getModelContainer()
         let context = ModelContext(container)
@@ -94,6 +108,13 @@ struct LogRatingHabitIntent: AppIntent {
     @Parameter(title: "Rating") var value: Int
     @Parameter(title: "Date", default: today) var date: Date
     
+    /// Logs a rating for the specified habit on the given date and returns a result view showing the recorded rating.
+    /// Creates or updates the habit entry for the date with the provided rating and saves the change.
+    /// - Returns: An intent result containing a dialog with the formatted entry date and a `HabitRatingSnippet` that displays the recorded rating.
+    /// - Throws:
+    ///   - `IntentError.habitNotFound` if no habit exists with the provided identifier.
+    ///   - `IntentError.wrongHabitType` if the resolved habit is not a rating-type habit.
+    ///   - `IntentError.valueOutOfRange(min:max:)` if the provided rating is outside the habit's allowed range.
     func perform() throws -> some IntentResult & ProvidesDialog & ShowsSnippetView {
         let container = try getModelContainer()
         let context = ModelContext(container)
@@ -130,6 +151,14 @@ struct LogNumericHabitIntent: AppIntent {
     @Parameter(title: "Value") var value: Double
     @Parameter(title: "Date", default: today) var date: Date
     
+    /// Logs a numeric value for the intent's habit on the specified date.
+    /// 
+    /// Validates that the habit exists, that it is a numeric-type habit, and that the provided value falls within the habit's allowed range. Creates or updates the entry for the start of the given day and saves the change.
+    /// - Returns: An `IntentResult` presenting a dialog with the entry's formatted date and a `HabitNumericSnippet` showing the habit title, numeric value, and unit.
+    /// - Throws:
+    ///   - `IntentError.habitNotFound` if no habit with the provided identifier exists.
+    ///   - `IntentError.wrongHabitType` if the habit is not a numeric-type habit.
+    ///   - `IntentError.valueOutOfRange(min:max:)` if the provided value is outside the habit's allowed minimum and maximum.
     func perform() throws -> some IntentResult & ProvidesDialog & ShowsSnippetView {
         let container = try getModelContainer()
         let context = ModelContext(container)

@@ -17,7 +17,7 @@ class HealthKitManager {
     
     private let healthStore = HKHealthStore()
     
-//    private init() {}
+private init() {}
     
     func requestAuthorization() async throws {
         print("Checking HK Authorization")

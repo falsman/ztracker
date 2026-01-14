@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		08B3AFA92F17D1ED00C09716 /* SFSymbols in Frameworks */ = {isa = PBXBuildFile; productRef = 08B3AFA82F17D1ED00C09716 /* SFSymbols */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXCopyFilesBuildPhase section */
 		08060B212EF093ED009EB613 /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
@@ -47,6 +51,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				08B3AFA92F17D1ED00C09716 /* SFSymbols in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -100,6 +105,7 @@
 			);
 			name = zTracker;
 			packageProductDependencies = (
+				08B3AFA82F17D1ED00C09716 /* SFSymbols */,
 			);
 			productName = ztracker;
 			productReference = 086150762EECC39500613F4D /* zTracker.app */;
@@ -129,6 +135,9 @@
 			);
 			mainGroup = 0861506D2EECC39500613F4D;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				08B3AFA72F17D1ED00C09716 /* XCLocalSwiftPackageReference "SFSymbols" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 086150772EECC39500613F4D /* Products */;
 			projectDirPath = "";
@@ -424,6 +433,20 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		08B3AFA72F17D1ED00C09716 /* XCLocalSwiftPackageReference "SFSymbols" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = SFSymbols;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		08B3AFA82F17D1ED00C09716 /* SFSymbols */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = SFSymbols;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 0861506E2EECC39500613F4D /* Project object */;
 }

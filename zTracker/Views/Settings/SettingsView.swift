@@ -262,7 +262,7 @@ struct DebugSection: View {
     @Environment(\.modelContext) private var context
 
     var body: some View {
-        VStack {
+        VStack(alignment: .leading) {
             Text("Debug Section")
                 .font(.headline)
             
@@ -279,9 +279,7 @@ struct DebugSection: View {
     }
     
     private func resetSampleData() {
-        let habits = try? context.fetch(FetchDescriptor<Habit>())
-        habits?.forEach { context.delete($0) }
-        
+        context.container.deleteAllData()
         UserDefaults.standard.removeObject(forKey: "didSeedSampleData")
     }
 }

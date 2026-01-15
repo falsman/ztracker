@@ -134,9 +134,10 @@ struct EntryEditorView: View {
     
     private var noteSection: some View {
         VStack {
-            TextField("Note", text: $note)
+            TextField("Note", text: $note, axis: .vertical)
                 .scrollContentBackground(.hidden)
                 .autocorrectionDisabled(false)
+                .lineLimit(1...3)
         }
         .padding()
     }

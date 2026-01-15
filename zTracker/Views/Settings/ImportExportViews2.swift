@@ -368,7 +368,7 @@ struct ImportRowView: View {
         let id = UUID(uuidString: components[0]) ?? UUID()
         let title = components[1].trimmingCharacters(in: CharacterSet(charactersIn: "\""))
         let typeString = components[2].trimmingCharacters(in: CharacterSet(charactersIn: "\""))
-        let type = HabitType.fromCSVString(typeString) ?? .boolean(goal: nil)
+        let type = HabitType.fromCSVString(typeString) ?? .boolean(goal: .init(target: 0, frequency: .daily))
         let color = components[3]
         let icon = components[4].isEmpty ? nil : components[4]
         let isArchived = Bool(components[5]) ?? false

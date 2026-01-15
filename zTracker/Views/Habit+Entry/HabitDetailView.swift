@@ -28,7 +28,9 @@ struct HabitDetailView: View {
         NavigationStack {
             ScrollView {
                 VStack() {
-                    HabitDetailSection(habit: habit, summaryTimeframe: summaryTimeframe)
+                    HabitDetailsSection(habit: habit, showingHabitEditor: $showingHabitEditor)
+                    
+                    HabitStatsSection(habit: habit, summaryTimeframe: summaryTimeframe)
                     
                     ChartSection(habit: habit, entries: entries, summaryTimeframe: summaryTimeframe)
                         .glassEffect(in: .rect(cornerRadius: 16))
@@ -52,9 +54,6 @@ struct HabitDetailView: View {
                     Button("Log Entry", systemImage: "plus") { showingDatePicker = true }
                 }
                 
-                ToolbarItem(placement: .secondaryAction) {
-                    Button("Edit Habit", systemImage: "slider.horizontal.3") { showingHabitEditor = true }
-                }
                 ToolbarItem(placement: .secondaryAction) {
                     Picker("Summary Range", systemImage: "ellipsis.calendar", selection: $summaryTimeframe) {
                         ForEach(Timeframe.allCases) { timeframe in
@@ -106,19 +105,13 @@ struct HabitDetailView: View {
     }
 }
 
-struct HabitDetailSection: View {
+struct HabitDetailsSection: View {
     let habit: Habit
-    let summaryTimeframe: Timeframe
+    @Binding var showingHabitEditor: Bool
     
-    private let columns: [GridItem] = [
-            GridItem(.flexible()),
-            GridItem(.flexible())
-        ]
-    
-    
-    var body: some View {
-        let averageInfo = HabitAverage(habit: habit, days: summaryTimeframe.days)
+    @AppStorage("userGoalState") private var userGoalState: Bool = false
 
+    var body: some View {
         VStack {
             HStack {
                 if let icon = habit.icon {
@@ -130,10 +123,72 @@ struct HabitDetailSection: View {
                     .font(.largeTitle)
                     .foregroundStyle(Color(habit.swiftUIColor))
             }
+            
+            
             Text(habit.type.displayName)
                 .font(.title3)
                 .foregroundStyle(Color(habit.swiftUIColor).secondary)
         }
+        .contextMenu {
+            Button("Edit Habit", systemImage: "slider.horizontal.3") { showingHabitEditor = true }
+        } preview: {
+            VStack {
+                if userGoalState {
+                    HStack {
+                        Text("Current Goal")
+                        Spacer()
+                        Text("\(habit.type.goal.target.formatted()) \(habit.type.goal.frequency.rawValue)").font(.headline)
+                    }
+                }
+                
+                switch habit.type {
+                    
+                case .rating(let min, let max, _): HStack {
+                        Text("Min/Max")
+                        Spacer()
+                        Text("\(min.formatted()) / \(max.formatted())")                        .font(.headline)
+
+                }
+                    
+                case .numeric(let min, let max, let unit, _): VStack {
+                    HStack {
+                        Text("Min/Max")
+                        Spacer()
+                        Text("\(min.formatted()) / \(max.formatted())")                        .font(.headline)
+
+                    }
+                    HStack {
+                        Text("Unit")
+                        Spacer()
+                        Text(unit).font(.headline)
+                    }
+                }
+                    
+                case .boolean, .duration: Text("")
+                }
+
+                
+            }
+            .padding()
+            .frame(maxWidth: .infinity)
+            .glassEffect(in: .rect(cornerRadius: 16))
+            .foregroundStyle(Color(habit.swiftUIColor))
+        }
+    }
+}
+
+struct HabitStatsSection: View {
+    let habit: Habit
+    let summaryTimeframe: Timeframe
+    
+    private let columns: [GridItem] = [
+            GridItem(.flexible()),
+            GridItem(.flexible())
+        ]
+    
+    
+    var body: some View {
+        let averageInfo = HabitAverage(habit: habit, days: summaryTimeframe.days)
         
         LazyVGrid(columns: columns) {
             StatCard(
@@ -299,7 +354,7 @@ extension Date: @retroactive Identifiable {
         
         try? container.mainContext.save()
         
-        let habitToShow = habits[3]
+        let habitToShow = habits[4]
         
         return HabitDetailView(habit: habitToShow)
             .modelContainer(container)

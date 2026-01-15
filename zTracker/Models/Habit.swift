@@ -90,6 +90,58 @@ final class Habit {
         }
     }
     
+    func goalProgress() -> (rawValue: Double, rate: Double) {
+        let frequency = type.goal.frequency
+        let target = type.goal.target
+        
+        let interval: DateInterval = {
+            switch frequency {
+            case .daily: return DateInterval(start: today, end: yesterday)
+            case .weekly: return DateInterval(start: today, end: weekAgo)
+            case .monthly: return DateInterval(start: today, end: monthAgo)
+            }
+        }()
+        
+        let intervalEntries = entries.filter { entry in
+            interval.contains(entry.date)
+        }
+        
+        let raw: Double = {
+            switch type {
+            case .boolean:
+                let count = intervalEntries.reduce(0) { partial, entry in
+                    partial + (entry.completed == true ? 1 : 0)
+                }
+                return Double(count)
+                
+            case .duration:
+                let totalSeconds = intervalEntries.reduce(0) { partial, entry in
+                    partial + Int(entry.durationSeconds ?? 0)
+                }
+                return Double(totalSeconds)
+                
+            case .rating:
+                let count = intervalEntries.reduce(0) { partial, entry in
+                    partial + (entry.ratValue != nil ? 1 : 0)
+                }
+                return Double(count)
+                
+            case .numeric:
+                let total = intervalEntries.reduce(0.0) { partial, entry in
+                    partial + (entry.numValue ?? 0)
+                }
+                return total
+            }
+        }()
+        
+        if target > 0 {
+            let rate = raw / target
+            return (raw, rate)
+        } else {
+            return (raw, 0)
+        }
+    }
+    
     func currentStreak() -> Int {
         var currentDate = Calendar.current.startOfDay(for: today)
         var streak = 0
@@ -151,4 +203,3 @@ final class Habit {
         return values.isEmpty ? 0 : values.reduce(0, +) / Double(values.count)
     }
 }
-

@@ -91,8 +91,7 @@ final class Habit {
     }
     
     func currentStreak() -> Int {
-        let calendar = Calendar.current
-        var currentDate = calendar.startOfDay(for: today)
+        var currentDate = Calendar.current.startOfDay(for: today)
         var streak = 0
         
         while true {
@@ -108,7 +107,7 @@ final class Habit {
             
             if isCompleted { streak += 1 } else { break }
             
-            guard let previousDate = calendar.date(byAdding: .day, value: -1, to: currentDate) else { break }
+            guard let previousDate = Calendar.current.date(byAdding: .day, value: -1, to: currentDate) else { break }
             currentDate = previousDate
         }
         return streak

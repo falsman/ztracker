@@ -7,6 +7,7 @@
 
 import Foundation
 
-nonisolated(unsafe) var today: Date = Calendar.current.startOfDay(for: Date())
-nonisolated(unsafe) var yesterday: Date = Calendar.current.date(byAdding: .day, value: -1, to: today)!
-
+let today: Date = Calendar.current.startOfDay(for: Date())
+let yesterday: Date = Calendar.current.date(byAdding: .day, value: -1, to: today) ?? Date().addingTimeInterval(-24 * 60 * 60)
+let weekAgo: Date = Calendar.current.date(byAdding: .weekOfYear, value: -1, to: today) ?? Date().addingTimeInterval(-7 * 24 * 60 * 60)
+let monthAgo: Date = Calendar.current.date(byAdding: .month, value: -1, to: today) ?? Date().addingTimeInterval(-30 * 24 * 60 * 60)

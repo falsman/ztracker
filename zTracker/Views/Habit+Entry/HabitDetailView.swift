@@ -41,12 +41,21 @@ struct HabitDetailView: View {
                     RecentEntriesSection(habit: habit, entries: entries, summaryTimeframe: summaryTimeframe)
                         .glassEffect(in: .rect(cornerRadius: 16))
                                         
-                    ToggleHabitArchive(habit: habit)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding()
-                        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.red, lineWidth: 1))
-                        .glassEffect(.regular.tint(.red.opacity(0.5)), in: .rect(cornerRadius: 16))
-                        .padding(.top)
+                    if !habit.isArchived {
+                        ArchiveHabitButton(habit: habit)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .padding()
+                            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.red, lineWidth: 1))
+                            .glassEffect(.regular.tint(.red.opacity(0.5)), in: .rect(cornerRadius: 16))
+                            .padding(.top)
+                    } else {
+                        UnarchiveHabitButton(habit: habit, totalHabitsCount: totalHabitsCount)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .padding()
+                            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.red, lineWidth: 1))
+                            .glassEffect(.regular.tint(.red.opacity(0.5)), in: .rect(cornerRadius: 16))
+                            .padding(.top)
+                    }
                 }
                 .padding()
             }

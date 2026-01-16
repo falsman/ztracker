@@ -22,5 +22,11 @@ var weekAgo: Date {
 
 var monthAgo: Date {
     Calendar.current.date(byAdding: .month, value: -1, to: today)
-        ?? Date().addingTimeInterval(-30 * 24 * 60 * 60)
+        ?? .now.addingTimeInterval(-30 * 24 * 60 * 60)
+}
+
+// MARK: - unix epoch
+
+var unixEpoch: Date {
+    Calendar.current.date(from: DateComponents(year: 1970, month: 1, day: 1, hour: 0, minute: 0, second: 0)) ?? Date(timeIntervalSince1970: 0)
 }

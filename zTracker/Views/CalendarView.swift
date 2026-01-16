@@ -90,7 +90,7 @@ struct CompactHabitCard: View {
             HStack {
                 if let icon = habit.icon {
                     Image(systemName: icon)
-                        .foregroundStyle(habit.swiftUIColor)
+                        .foregroundStyle(habit.swiftUIColor.secondary)
                 }
                 Text(habit.title)
                     .font(.caption)

@@ -4,7 +4,7 @@ import SwiftUI
 struct ExampleApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            SFSymbolsExampleContentView()
             #if os(macOS) || os(visionOS)
                 .frame(
                     minWidth: 400,

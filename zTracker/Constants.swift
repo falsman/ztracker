@@ -7,16 +7,17 @@
 
 import Foundation
 
-var today: Date { Calendar.current.startOfDay(for: Date()) }
+// MARK: - dates
+var today: Date { Calendar.current.startOfDay(for: .now) }
 
 var yesterday: Date {
     Calendar.current.date(byAdding: .day, value: -1, to: today)
-        ?? Date().addingTimeInterval(-24 * 60 * 60)
+        ?? .now.addingTimeInterval(-24 * 60 * 60)
 }
 
 var weekAgo: Date {
     Calendar.current.date(byAdding: .weekOfYear, value: -1, to: today)
-        ?? Date().addingTimeInterval(-7 * 24 * 60 * 60)
+        ?? .now.addingTimeInterval(-7 * 24 * 60 * 60)
 }
 
 var monthAgo: Date {

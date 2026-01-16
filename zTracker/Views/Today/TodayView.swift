@@ -12,7 +12,8 @@ struct TodayView: View {
     @Environment(\.modelContext) private var context
     
     @AppStorage("healthKitEnabled") var healthKitEnabled = true
-        
+    
+    @Query(sort: \Habit.sortIndex) private var allHabits: [Habit]
     @Query(filter: #Predicate<Habit> { !$0.isArchived },
            sort: \.sortIndex,
            order: .forward
@@ -21,17 +22,18 @@ struct TodayView: View {
     
     @State private var selectedHabit: Habit?
     
-    private var currentTime = Text(Date(), style: .time)
+    private var currentTime = Text(.now, style: .time)
     
     var body: some View {
         NavigationStack {
             ScrollView {
                 #if os(macOS)
                 VStack {
-                    Text(Date(), style: .date)
+                    Text(.now, style: .date)
                         .font(.title)
                     currentTime
                         .font(.title2)
+                    //TODO: accessibility
                         .foregroundStyle(.secondary)
                 }
                 .padding()
@@ -40,14 +42,14 @@ struct TodayView: View {
                 StatsOverviewView()
                     .padding(.horizontal)
                 
-                HabitCardView(activeHabits: activeHabits, selectedHabit: $selectedHabit)
+                HabitCardView(activeHabits: activeHabits, selectedHabit: $selectedHabit, totalHabitsCount: allHabits.count)
                 
             }
             
             #if os(iOS)
             .background(movingLinearGradient(selectedColor: .theme))
             .navigationBarTitleDisplayMode(.inline)
-            .navigationTitle(Text(Date(), style: .date))
+            .navigationTitle(Text(.now, style: .date))
             .navigationSubtitle(currentTime)
             
             .toolbar {
@@ -73,6 +75,8 @@ struct TodayView: View {
 struct HabitCardView: View {
     var activeHabits: [Habit]
     @Binding var selectedHabit: Habit?
+    
+    var totalHabitsCount: Int
     
     #if os(macOS)
     let columns = [

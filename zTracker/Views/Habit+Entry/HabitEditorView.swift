@@ -79,7 +79,7 @@ struct HabitEditorView: View {
                     .glassEffect(in: .rect(cornerRadius: 16))
                     .padding(.horizontal)
                 
-                Text("Created on: \((existingHabit?.createdAt ?? Date()).formatted(date: .long, time: .omitted))")
+                Text("Created on: \((existingHabit?.createdAt ?? .now).formatted(date: .long, time: .omitted))")
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal)
                     .padding(.horizontal)
@@ -153,7 +153,7 @@ struct HabitEditorView: View {
                 type: type,
                 color: selectedColor.rawValue,
                 icon: icon.isEmpty ? nil : icon,
-                createdAt: Date(),
+                createdAt: .now,
                 reminder: reminder,
                 sortIndex: nextSortIndex
             )
@@ -355,7 +355,7 @@ struct ReminderSection: View {
             
             if reminder != nil {
                 DatePicker("Time", selection: Binding(
-                    get: { reminder ?? today },
+                    get: { reminder ?? .now },
                     set: { reminder = $0 }
                 ), displayedComponents: .hourAndMinute)
             }

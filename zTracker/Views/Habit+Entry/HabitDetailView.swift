@@ -20,6 +20,11 @@ struct HabitDetailView: View {
     @State private var selectedDateForNewEntry = today
     @State private var dateToLog: Date?
     
+    private var totalHabitsCount: Int {
+        let descriptor = FetchDescriptor<Habit>()
+        return (try? context.fetchCount(descriptor)) ?? 0
+    }
+    
     @AppStorage("habitsTimeframe") private var summaryTimeframe: Timeframe = .week
     
     let habit: Habit
@@ -82,7 +87,6 @@ struct HabitDetailView: View {
             
             .sheet(item: $dateToLog) {
                 date in EntryEditorView(habit: habit, date: date)
-//                    .background(Color(habit.swiftUIColor).gradient)
             }
                         
             .sheet(isPresented: $showingHabitEditor) { HabitEditorView(habit: habit) }
@@ -124,15 +128,15 @@ struct HabitDetailSection: View {
                 if let icon = habit.icon {
                     Image(systemName: icon)
                         .font(.title)
-                        .foregroundStyle(Color(habit.swiftUIColor))
+                        .foregroundStyle(habit.swiftUIColor)
                 }
                 Text(habit.title)
                     .font(.largeTitle)
-                    .foregroundStyle(Color(habit.swiftUIColor))
+                    .foregroundStyle(habit.swiftUIColor)
             }
             Text(habit.type.displayName)
                 .font(.title3)
-                .foregroundStyle(Color(habit.swiftUIColor).secondary)
+                .foregroundStyle(habit.swiftUIColor)
         }
         
         LazyVGrid(columns: columns) {

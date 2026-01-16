@@ -1,7 +1,7 @@
 import SFSymbols
 import SwiftUI
 
-struct ContentView: View {
+struct SFSymbolsExampleContentView: View {
     @State private var selectedSFSymbol = "heart"
     @State private var renderingMode: SymbolRenderingModeSetting = .hierarchical
     @State private var primaryColor: Color = .primary
@@ -113,5 +113,5 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView()
+    SFSymbolsExampleContentView()
 }

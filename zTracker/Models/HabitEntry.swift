@@ -30,7 +30,7 @@ final class HabitEntry {
         ratValue: Int? = nil,
         numValue: Double? = nil,
         note: String? = nil,
-        updatedAt: Date = Date(),
+        updatedAt: Date = .now,
         
         habit: Habit? = nil
     ) {

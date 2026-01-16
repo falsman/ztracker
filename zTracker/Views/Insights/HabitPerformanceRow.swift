@@ -21,7 +21,7 @@ struct HabitPerformanceRow: View {
                 ZStack {
                     Circle()
                         .trim(from: 0, to: habitCompletionRate)
-                        .fill(Color(habit.swiftUIColor).tertiary)
+                        .fill(Color(habit.swiftUIColor).secondary)
                         .frame(width: 40, height: 40)
                     Image(systemName: icon)
                 }

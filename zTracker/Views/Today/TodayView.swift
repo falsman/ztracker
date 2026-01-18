@@ -67,7 +67,7 @@ struct TodayView: View {
         }
         .sheet(item: $selectedHabit) {
             habit in EntryEditorView(habit: habit, date: today)
-                .background(Color(.clear))
+                .background(.clear)
         }
     }
 }

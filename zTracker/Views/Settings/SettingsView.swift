@@ -41,7 +41,7 @@ struct SettingsView: View {
                 .frame(maxHeight: .infinity, alignment: .top)
             }
             #if os(iOS)
-            .background(movingLinearGradient(selectedColor: .theme))
+            .background(MovingLinearGradient(selectedColor: .theme))
             #endif
             
         }

@@ -20,6 +20,11 @@ struct HabitDetailView: View {
     @State private var selectedDateForNewEntry = today
     @State private var dateToLog: Date?
     
+    private var totalHabitsCount: Int {
+        let descriptor = FetchDescriptor<Habit>()
+        return (try? context.fetchCount(descriptor)) ?? 0
+    }
+    
     @AppStorage("habitsTimeframe") private var summaryTimeframe: Timeframe = .week
     
     let habit: Habit
@@ -36,16 +41,25 @@ struct HabitDetailView: View {
                     RecentEntriesSection(habit: habit, entries: entries, summaryTimeframe: summaryTimeframe)
                         .glassEffect(in: .rect(cornerRadius: 16))
                                         
-                    ToggleHabitArchive(habit: habit)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding()
-                        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.red, lineWidth: 1))
-                        .glassEffect(.regular.tint(.red.opacity(0.5)), in: .rect(cornerRadius: 16))
-                        .padding(.top)
+                    if !habit.isArchived {
+                        ArchiveHabitButton(habit: habit)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .padding()
+                            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.red, lineWidth: 1))
+                            .glassEffect(.regular.tint(.red.opacity(0.5)), in: .rect(cornerRadius: 16))
+                            .padding(.top)
+                    } else {
+                        UnarchiveHabitButton(habit: habit, totalHabitsCount: totalHabitsCount)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .padding()
+                            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.red, lineWidth: 1))
+                            .glassEffect(.regular.tint(.red.opacity(0.5)), in: .rect(cornerRadius: 16))
+                            .padding(.top)
+                    }
                 }
                 .padding()
             }
-            .background(movingLinearGradient(selectedColor: habit.swiftUIColor))
+            .background(MovingLinearGradient(selectedColor: habit.swiftUIColor))
             
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
@@ -82,7 +96,6 @@ struct HabitDetailView: View {
             
             .sheet(item: $dateToLog) {
                 date in EntryEditorView(habit: habit, date: date)
-//                    .background(Color(habit.swiftUIColor).gradient)
             }
                         
             .sheet(isPresented: $showingHabitEditor) { HabitEditorView(habit: habit) }
@@ -124,15 +137,15 @@ struct HabitDetailSection: View {
                 if let icon = habit.icon {
                     Image(systemName: icon)
                         .font(.title)
-                        .foregroundStyle(Color(habit.swiftUIColor))
+                        .foregroundStyle(habit.swiftUIColor)
                 }
                 Text(habit.title)
                     .font(.largeTitle)
-                    .foregroundStyle(Color(habit.swiftUIColor))
+                    .foregroundStyle(habit.swiftUIColor)
             }
             Text(habit.type.displayName)
                 .font(.title3)
-                .foregroundStyle(Color(habit.swiftUIColor).secondary)
+                .foregroundStyle(habit.swiftUIColor)
         }
         
         LazyVGrid(columns: columns) {
@@ -182,7 +195,7 @@ struct ChartSection: View {
                         x: .value("Date", entry.date),
                         y: .value("Value", normalizedValue(for: entry))
                     )
-                    .foregroundStyle(Color(habit.swiftUIColor))
+                    .foregroundStyle(habit.swiftUIColor)
                 }
             }
             .chartYAxis {

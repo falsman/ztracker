@@ -60,7 +60,7 @@ struct ColorExtractor {
     }
 }
 
-struct linearGradient: View {
+struct AppLinearGradient: View {
     @Environment(\.self) private var env
     @Environment(\.colorScheme) var colorScheme
     
@@ -78,7 +78,7 @@ struct linearGradient: View {
 }
 
 
-struct movingLinearGradient: View {
+struct MovingLinearGradient: View {
     @Environment(\.colorScheme) var colorScheme
     @State private var animate = false
     
@@ -108,10 +108,10 @@ struct movingLinearGradient: View {
     
 
 
-#Preview("movingLinearGradient") {
-    movingLinearGradient(selectedColor: .theme)
+#Preview("MovingLinearGradient") {
+    MovingLinearGradient(selectedColor: .theme)
 }
 
-#Preview("linearGradient") {
-    linearGradient(selectedColor: .theme)
+#Preview("AppLinearGradient") {
+    AppLinearGradient(selectedColor: .theme)
 }

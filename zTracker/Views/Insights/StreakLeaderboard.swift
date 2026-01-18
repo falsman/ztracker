@@ -31,7 +31,7 @@ struct StreakLeaderboard: View {
                     HStack {
                         if let icon = habit.icon {
                             Image(systemName: icon)
-                                .foregroundStyle(Color(habit.swiftUIColor))
+                                .foregroundStyle(habit.swiftUIColor)
                         }
                         
                         Text(habit.title)

@@ -36,32 +36,44 @@ struct PreviewHelpers {
     static func makeRandomEntries(for habit: Habit, days: Int = 7) {
         (0..<days).forEach { offset in
             let startOfDate = Calendar.current.date(byAdding: .day, value: -offset, to: today) ?? today
+            
+            let entryFillDice = Int.random(in: 0...6)
+            var entryFill = true
+
+            switch entryFillDice {
+            case 1, 2, 3, 4, 5: entryFill = true
+            default: entryFill = false
+            }
 
             let entry = HabitEntry(
                 id: UUID(),
                 date: startOfDate,
                 completed: {
-                    if case .boolean(_) = habit.type { return Bool.random() }
-                    return nil
+                    let boolDice = Int.random(in: 0...4)
+                    switch boolDice {
+                    case 1, 2, 3, 4: return true
+                    default: return false
+                    }
                 }(),
                 durationSeconds:{
-                    if case .duration(_) = habit.type { return Int64.random(in: 0...(8 * 60 * 60)) }
+                    if case .duration(_) = habit.type { if entryFill { return Int64.random(in: 0...(8 * 60 * 60)) } else { return nil } }
                     return nil
                 }(),
                 ratValue: {
-                    if case let .rating(min, max, _) = habit.type { return Int.random(in: min...max) }
+                    if case let .rating(min, max, _) = habit.type { if entryFill { return Int.random(in: min...max) } else { return nil } }
                     return nil
                 }(),
                 numValue: {
-                    if case let .numeric(min, max, _, _) = habit.type { return Double.random(in: min...max) }
+                    if case let .numeric(min, max, _, _) = habit.type { if entryFill { return Double.random(in: min...max) } else { return nil } }
                     return nil
                 }(),
                 note: {
-                    let dice = Int.random(in: 0...5)
-                    switch dice {
+                    var noteDice: Int
+                    if entryFill { noteDice = Int.random(in: 0...5) } else { noteDice = 6 }
+                    switch noteDice {
                     case 1: return "random note"
                     case 2: return "a longer random note to test"
-                    case 3: return "testing multiline notes to check \n layout and how it looks"
+                    case 3: return "testing multiline notes to check layout and how it looks"
                     case 4: return "melatonin"
                     case 5: return "talk to [felix]"
                     default: return nil
@@ -185,6 +197,24 @@ struct PreviewHelpers {
             sortIndex: 8
         )
     ]
+}
+
+enum SampleDataSeeder {
+
+    static func seedIfNeeded(context: ModelContext) {
+        let alreadySeeded = UserDefaults.standard.bool(forKey: "didSeedSampleData")
+        guard !alreadySeeded else { return }
+
+        let habits = PreviewHelpers.makeHabits(days: 200)
+        habits.forEach { context.insert($0) }
+
+        do {
+            try context.save()
+            UserDefaults.standard.set(true, forKey: "didSeedSampleData")
+        } catch {
+            print("Sample data seeding failed:", error)
+        }
+    }
 }
 
 #Preview("Empty State") {

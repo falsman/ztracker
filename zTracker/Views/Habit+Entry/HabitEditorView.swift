@@ -76,7 +76,7 @@ struct HabitEditorView: View {
                     .glassEffect(in: .rect(cornerRadius: 16))
                     .padding(.horizontal)
                 
-                Text("Created on: \((existingHabit?.createdAt ?? Date()).formatted(date: .long, time: .omitted))")
+                Text("Created on: \((existingHabit?.createdAt ?? .now).formatted(date: .long, time: .omitted))")
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal)
                     .padding(.horizontal)
@@ -101,7 +101,7 @@ struct HabitEditorView: View {
         }
         .background(selectedColor.color.gradient)
         .presentationDetents([.medium, .large])
-        .tint(Color(selectedColor.color))
+        .tint(selectedColor.color)
         .onAppear { loadHabit() }
     }
     
@@ -146,12 +146,13 @@ struct HabitEditorView: View {
                 type: type,
                 color: selectedColor.rawValue,
                 icon: icon.isEmpty ? nil : icon,
-                createdAt: Date(),
+                createdAt: .now,
                 reminder: reminder,
                 sortIndex: nextSortIndex
             )
             context.insert(habit)
-            if reminder != nil { Task { await scheduleNotification(for: habit) }}
+//            if reminder != nil { Task { await scheduleNotification(for: habit) }}
+//              adding support in separate branch
         }
     }
 }
@@ -289,7 +290,6 @@ struct AppearanceSection: View {
                         #if os(macOS)
                         .containerRelativeFrame(.horizontal, count: 10, span: 2, spacing: 0)
                         #endif
-                        .tint(Color(selectedColor.color))
                     
                 }
                 .sfSymbolPicker(isPresented: $showSymbolPicker, selection: $icon)
@@ -360,13 +360,13 @@ struct ReminderSection: View {
             Toggle("Set Daily Reminder", isOn: .init (
                 get: { reminder != nil },
                 set: { if !$0 { reminder = nil } else {
-                    reminder = Calendar.current.date(bySettingHour: 20, minute: 0, second: 0, of: today)
+                    reminder = Calendar.current.date(bySettingHour: 20, minute: 0, second: 0, of: unixEpoch)
                 }
                 }))
             
             if reminder != nil {
                 DatePicker("Time", selection: Binding(
-                    get: { reminder ?? today },
+                    get: { reminder ?? unixEpoch },
                     set: { reminder = $0 }
                 ), displayedComponents: .hourAndMinute)
             }

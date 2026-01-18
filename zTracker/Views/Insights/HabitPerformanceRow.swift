@@ -46,7 +46,7 @@ struct HabitPerformanceRow: View {
 
         }
         .padding()
-        .glassEffect(in: .rect(cornerRadius: 16)) // .regular.tint(Color(habit.swiftUIColor).opacity(0.3)),
+        .glassEffect(in: .rect(cornerRadius: 16)) // .regular.tint(habit.swiftUIColor.opacity(0.3)),
     }
 }
 

@@ -66,7 +66,7 @@ struct CalendarView: View {
             }
             
             #if os(iOS)
-            .background(movingLinearGradient(selectedColor: .theme))
+            .background(MovingLinearGradient(selectedColor: .theme))
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .navigationTitle("Calendar")
@@ -74,7 +74,7 @@ struct CalendarView: View {
         }
         .sheet(item: $selectedHabit) { habit in
             EntryEditorView(habit: habit, date: selectedDate)
-                .background(Color(.clear))
+                .background(.clear)
         }
     }
 }
@@ -90,7 +90,7 @@ struct CompactHabitCard: View {
             HStack {
                 if let icon = habit.icon {
                     Image(systemName: icon)
-                        .foregroundStyle(habit.swiftUIColor)
+                        .foregroundStyle(habit.swiftUIColor.secondary)
                 }
                 Text(habit.title)
                     .font(.caption)

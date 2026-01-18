@@ -48,15 +48,13 @@ struct HabitsView: View {
                 .listRowBackground(Color(.clear))
                 
                 .contextMenu {
-                    Button("Edit Habit", systemImage: "pencil") {
-                        habitToEdit = habit
-                    }
+                    Button("Edit Habit", systemImage: "pencil") { habitToEdit = habit }
                     .buttonStyle(.glass)
                     .tint(.blue)
                     
                     Divider()
                     
-                    ToggleHabitArchive(habit: habit)
+                    if !habit.isArchived { ArchiveHabitButton(habit: habit) } else { UnarchiveHabitButton(habit: habit, totalHabitsCount: allHabits.count) }
                 }
             }
             .onMove { from, to in
@@ -77,7 +75,7 @@ struct HabitsView: View {
             min: 150, ideal: 200, max: 400)
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
-        .background(movingLinearGradient(selectedColor: .theme))
+        .background(MovingLinearGradient(selectedColor: .theme))
         #endif
         
         .toolbar {
@@ -125,12 +123,25 @@ struct HabitsView: View {
     }
 }
 
-struct ToggleHabitArchive: View {
+struct ArchiveHabitButton: View {
     let habit: Habit
     
     var body: some View {
-        Button(habit.isArchived ? "Unarchive Habit" : "Archive Habit", systemImage: habit.isArchived ? "arrow.up.bin" : "archivebox") {
-            Task { habit.isArchived.toggle() }
+        Button("Archive Habit", systemImage: "archivebox") {
+            habit.isArchived = true
+            habit.sortIndex = -habit.sortIndex
+        }
+    }
+}
+
+struct UnarchiveHabitButton: View {
+    let habit: Habit
+    let totalHabitsCount: Int
+    
+    var body: some View {
+        Button("Unarchive Habit", systemImage: "arrow.up.bin") {
+            habit.isArchived = false
+            habit.sortIndex = totalHabitsCount + 1
         }
     }
 }

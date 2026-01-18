@@ -75,7 +75,7 @@ struct HabitEditorView: View {
                     .glassEffect(in: .rect(cornerRadius: 16))
                     .padding(.horizontal)
 
-                ReminderSection(reminder: $reminder)
+                ReminderSection(reminder: $reminder, habitID: existingHabit?.id ?? UUID())
                     .glassEffect(in: .rect(cornerRadius: 16))
                     .padding(.horizontal)
                 
@@ -137,8 +137,8 @@ struct HabitEditorView: View {
         switch selectedType {
         case .boolean: type = .boolean(goal: nil)
         case .duration: type = .duration(goal: nil)
-        case .rating: type = .rating(min: ratingMin ?? 0, max: ratingMax ?? 0, goal: nil)
-        case .numeric: type = .numeric(min: numericMin ?? 0, max: numericMax ?? 0, unit: numericUnit.trimmingCharacters(in: .whitespacesAndNewlines), goal: nil)
+        case .rating: type = .rating(min: ratingMin ?? 0, max: ratingMax ?? 5, goal: nil)
+        case .numeric: type = .numeric(min: numericMin ?? 0, max: numericMax ?? 100, unit: numericUnit.trimmingCharacters(in: .whitespacesAndNewlines), goal: nil)
         }
         
         if let habit = existingHabit {
@@ -146,20 +146,24 @@ struct HabitEditorView: View {
             habit.type = type
             habit.color = selectedColor.rawValue
             habit.icon = icon.isEmpty ? nil : icon
-            habit.reminder = reminder
+            if habit.reminder != reminder {
+                habit.reminder = reminder
+                Task { await NotificationsManager.shared.scheduleHabitReminder(habit: habit) }
+            }
         } else {
             let habit = Habit(
                 title: title.trimmingCharacters(in: .whitespacesAndNewlines),
                 type: type,
                 color: selectedColor.rawValue,
-                icon: icon.isEmpty ? nil : icon,
+                icon: icon,
                 createdAt: .now,
                 reminder: reminder,
                 sortIndex: nextSortIndex
             )
             context.insert(habit)
-            if reminder != nil { Task { await scheduleNotification(for: habit) }}
+            Task { await NotificationsManager.shared.scheduleHabitReminder(habit: habit) }
         }
+        try? context.save()
     }
 }
 
@@ -343,15 +347,22 @@ struct GoalsSection: View {
 }
 struct ReminderSection: View {
     @Binding var reminder: Date?
+    let habitID: UUID
     
     var body: some View {
         VStack {
             Toggle("Set Daily Reminder", isOn: .init (
                 get: { reminder != nil },
-                set: { if !$0 { reminder = nil } else {
-                    reminder = Calendar.current.date(bySettingHour: 20, minute: 0, second: 0, of: today)
+                set: {
+                    if !$0 { reminder = nil }
+                    else { reminder = Calendar.current.date(bySettingHour: 20, minute: 0, second: 0, of: today) }
                 }
-                }))
+            ))
+            .onChange(of: reminder) {
+                if reminder == nil {
+                    Task { await NotificationsManager.shared.cancelHabitReminders(habitID: habitID) }
+                }
+            }
             
             if reminder != nil {
                 DatePicker("Time", selection: Binding(

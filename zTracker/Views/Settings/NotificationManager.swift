@@ -15,8 +15,6 @@ import UIKit
 #endif
 
 // TODO: - Integration checklist
-// On launch:
-// - Set NotificationsManager.shared.actionHandler = DefaultNotificationsActionHandler()
 
 // Duration “Open to Log” action:
 // - Implement a URL/deep link to open EntryEditorView for the habit today (or App Intent to log)

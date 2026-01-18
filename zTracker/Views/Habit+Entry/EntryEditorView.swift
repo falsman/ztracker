@@ -185,7 +185,7 @@ struct EntryEditorView: View {
     private func ratingPicker(min: Int, max: Int) -> some View {
         HStack {
             ForEach(min...max, id: \.self) { value in
-                let isFilled = value <= ratingValue ?? 3
+                let isFilled = value <= (ratingValue ?? 3)
 
                 Image(systemName: isFilled ? "star.fill" : "star")
                     .font(.title)

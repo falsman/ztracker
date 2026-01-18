@@ -74,7 +74,7 @@ struct CalendarView: View {
         }
         .sheet(item: $selectedHabit) { habit in
             EntryEditorView(habit: habit, date: selectedDate)
-                .background(Color(.clear))
+                .background(.clear)
         }
     }
 }

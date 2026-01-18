@@ -128,10 +128,8 @@ struct ArchiveHabitButton: View {
     
     var body: some View {
         Button("Archive Habit", systemImage: "archivebox") {
-            Task {
-                habit.isArchived = true
-                habit.sortIndex = -habit.sortIndex
-            }
+            habit.isArchived = true
+            habit.sortIndex = -habit.sortIndex
         }
     }
 }
@@ -142,10 +140,8 @@ struct UnarchiveHabitButton: View {
     
     var body: some View {
         Button("Unarchive Habit", systemImage: "arrow.up.bin") {
-            Task {
-                habit.isArchived = false
-                habit.sortIndex = totalHabitsCount + 1
-            }
+            habit.isArchived = false
+            habit.sortIndex = totalHabitsCount + 1
         }
     }
 }

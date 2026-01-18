@@ -20,10 +20,8 @@ struct HabitDetailView: View {
     @State private var selectedDateForNewEntry = today
     @State private var dateToLog: Date?
     
-    private var totalHabitsCount: Int {
-        let descriptor = FetchDescriptor<Habit>()
-        return (try? context.fetchCount(descriptor)) ?? 0
-    }
+    @Query private var allHabits: [Habit]
+    private var totalHabitsCount: Int { allHabits.count }
     
     @AppStorage("habitsTimeframe") private var summaryTimeframe: Timeframe = .week
     
@@ -40,22 +38,19 @@ struct HabitDetailView: View {
                     
                     RecentEntriesSection(habit: habit, entries: entries, summaryTimeframe: summaryTimeframe)
                         .glassEffect(in: .rect(cornerRadius: 16))
-                                        
-                    if !habit.isArchived {
-                        ArchiveHabitButton(habit: habit)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            .padding()
-                            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.red, lineWidth: 1))
-                            .glassEffect(.regular.tint(.red.opacity(0.5)), in: .rect(cornerRadius: 16))
-                            .padding(.top)
-                    } else {
-                        UnarchiveHabitButton(habit: habit, totalHabitsCount: totalHabitsCount)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            .padding()
-                            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.red, lineWidth: 1))
-                            .glassEffect(.regular.tint(.red.opacity(0.5)), in: .rect(cornerRadius: 16))
-                            .padding(.top)
+                    
+                    Group {
+                        if !habit.isArchived {
+                            ArchiveHabitButton(habit: habit)
+                        } else {
+                            UnarchiveHabitButton(habit: habit, totalHabitsCount: totalHabitsCount)
+                        }
                     }
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding()
+                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.red, lineWidth: 1))
+                    .glassEffect(.regular.tint(.red.opacity(0.5)), in: .rect(cornerRadius: 16))
+                    .padding(.top)
                 }
                 .padding()
             }

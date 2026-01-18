@@ -12,7 +12,7 @@ struct StreakLeaderboard: View {
     var activeHabits: [Habit]
     
     var topHabits: [Habit] {
-        activeHabits.sorted { $0.currentStreak() > $1.currentStreak() }.prefix(5).map { $0 }
+        activeHabits.sorted { $0.currentGoalStreak() > $1.currentGoalStreak() }.prefix(5).map { $0 }
     }
     
     var body: some View {
@@ -42,7 +42,7 @@ struct StreakLeaderboard: View {
                         HStack {
                             Image(systemName: "flame")
                                 .foregroundStyle(.orange)
-                            Text("\(habit.currentStreak()) days")
+                            Text("\(habit.currentGoalStreak()) \(habit.type.goal.frequency.rawValue.lowercased())s")
                                 .font(.subheadline)
                                 .fontWeight(.semibold)
                         }

@@ -192,14 +192,14 @@ struct HabitStatsSection: View {
         
         LazyVGrid(columns: columns) {
             StatCard(
-                title: "Current Streak",
-                value: "\(habit.currentStreak())",
+                title: "Current Goal Streak",
+                value: "\(habit.currentGoalStreak())",
                 icon: "flame",
                 caption: ""
             )
             StatCard(
-                title: "Completion",
-                value: habit.completionRate(days: summaryTimeframe.days).formatted(.percent.precision(.fractionLength(0))),
+                title: "Goal Progress",
+                value: habit.goalProgress().rate.formatted(.percent),
                 icon: "chart.xyaxis.line",
                 caption: "this \(summaryTimeframe.rawValue)"
             )

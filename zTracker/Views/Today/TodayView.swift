@@ -114,10 +114,10 @@ struct HabitCard: View {
             
             Spacer()
             
-            if habit.currentStreak() > 0 {
+            if habit.currentGoalStreak() > 0 {
                 HStack {
                     Image(systemName: "flame").font(.caption)
-                    Text("\(habit.currentStreak())").font(.caption)
+                    Text("\(habit.currentGoalStreak())").font(.caption)
                 }
                 .foregroundStyle(habit.swiftUIColor.secondary)
             }

@@ -90,58 +90,6 @@ final class Habit {
         }
     }
     
-    func goalProgress() -> (rawValue: Double, rate: Double) {
-        let frequency = type.goal.frequency
-        let target = type.goal.target
-        
-        let interval: DateInterval = {
-            switch frequency {
-            case .daily: return DateInterval(start: today, end: yesterday)
-            case .weekly: return DateInterval(start: today, end: weekAgo)
-            case .monthly: return DateInterval(start: today, end: monthAgo)
-            }
-        }()
-        
-        let intervalEntries = entries.filter { entry in
-            interval.contains(entry.date)
-        }
-        
-        let raw: Double = {
-            switch type {
-            case .boolean:
-                let count = intervalEntries.reduce(0) { partial, entry in
-                    partial + (entry.completed == true ? 1 : 0)
-                }
-                return Double(count)
-                
-            case .duration:
-                let totalSeconds = intervalEntries.reduce(0) { partial, entry in
-                    partial + Int(entry.durationSeconds ?? 0)
-                }
-                return Double(totalSeconds)
-                
-            case .rating:
-                let count = intervalEntries.reduce(0) { partial, entry in
-                    partial + (entry.ratValue != nil ? 1 : 0)
-                }
-                return Double(count)
-                
-            case .numeric:
-                let total = intervalEntries.reduce(0.0) { partial, entry in
-                    partial + (entry.numValue ?? 0)
-                }
-                return total
-            }
-        }()
-        
-        if target > 0 {
-            let rate = raw / target
-            return (raw, rate)
-        } else {
-            return (raw, 0)
-        }
-    }
-    
     func currentStreak() -> Int {
         var currentDate = Calendar.current.startOfDay(for: today)
         var streak = 0
@@ -150,12 +98,12 @@ final class Habit {
             guard let entry = entry(for: currentDate) else { break }
             
             let isCompleted: Bool
-                switch type {
-                case .boolean: isCompleted = entry.completed ?? false
-                case .duration: isCompleted = (entry.time ?? .zero) > .zero
-                case .rating: isCompleted = entry.ratValue != nil
-                case .numeric: isCompleted = (entry.numValue ?? 0) > 0
-                }
+            switch type {
+            case .boolean: isCompleted = entry.completed ?? false
+            case .duration: isCompleted = (entry.time ?? .zero) > .zero
+            case .rating: isCompleted = entry.ratValue != nil
+            case .numeric: isCompleted = (entry.numValue ?? 0) > 0
+            }
             
             if isCompleted { streak += 1 } else { break }
             
@@ -183,6 +131,40 @@ final class Habit {
         return Double(completedDays) / Double(days)
     }
     
+    func currentGoalStreak(reference: Date = today) -> Int {
+        let frequency = type.goal.frequency
+        let target = type.goal.target
+        
+        var streak = 0
+        var index = 0
+        
+        while true {
+            let interval = periodInterval(forIndex: index, frequency: frequency, reference: reference)
+            let periodEntries = entries.filter { interval.contains($0.date) }
+            let raw = rawValue(for: periodEntries, type: type)
+            
+            if raw >= target { streak += 1; index += 1 }
+            else { break }
+        }
+        return streak
+    }
+    
+    func goalProgress() -> (rawValue: Double, rate: Double) {
+        let frequency = type.goal.frequency
+        let target = type.goal.target
+        
+        let interval = periodInterval(forIndex: 0, frequency: frequency, reference: today)
+        
+        let intervalEntries = entries.filter { entry in
+            interval.contains(entry.date)
+        }
+        
+        let raw: Double = rawValue(for: intervalEntries, type: type)
+        
+        if target > 0 { return (raw, (raw / target)) }
+        else { return (raw, 0) }
+    }
+    
     func habitAverage(days: Int) -> Double {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: today)
@@ -201,5 +183,75 @@ final class Habit {
         }
         
         return values.isEmpty ? 0 : values.reduce(0, +) / Double(values.count)
+    }
+}
+
+private extension Habit {
+    func rawValue(for entries: [HabitEntry], type: HabitType) -> Double {
+        switch type {
+        case .boolean:
+            let count = entries.reduce(0) { partial, entry in
+                partial + (entry.completed == true ? 1 : 0)
+            }
+            return Double(count)
+            
+        case .duration:
+            let totalSeconds = entries.reduce(0) { partial, entry in
+                partial + Int(entry.durationSeconds ?? 0)
+            }
+            return Double(totalSeconds)
+            
+        case .rating:
+            let count = entries.reduce(0) { partial, entry in
+                partial + (entry.ratValue != nil ? 1 : 0)
+            }
+            return Double(count)
+            
+        case .numeric:
+            let total = entries.reduce(0.0) { partial, entry in
+                partial + (entry.numValue ?? 0)
+            }
+            return total
+        }
+    }
+    
+    func periodInterval(forIndex index: Int, frequency: HabitGoal.Frequency, reference: Date) -> DateInterval {
+        let calendar = Calendar.current
+        let refStart = startOfPeriod(for: reference, frequency: frequency, calendar: calendar)
+        let start = calendar.date(byAdding: dateComponents(for: frequency, value: -index), to: refStart) ?? refStart
+        let end = nextPeriodStart(after: start, frequency: frequency, calendar: calendar)
+        return DateInterval(start: start, end: end)
+    }
+    
+    func startOfPeriod(for date: Date, frequency: HabitGoal.Frequency, calendar: Calendar) -> Date {
+        switch frequency {
+        case .daily:
+            return calendar.startOfDay(for: date)
+        case .weekly:
+            let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: date)
+            return calendar.date(from: components) ?? calendar.startOfDay(for: date)
+        case .monthly:
+            let components = calendar.dateComponents([.year, .month], from: date)
+            return calendar.date(from: components) ?? calendar.startOfDay(for: date)
+        }
+    }
+    
+    func nextPeriodStart(after start: Date, frequency: HabitGoal.Frequency, calendar: Calendar) -> Date {
+        switch frequency {
+        case .daily:
+            return calendar.date(byAdding: .day, value: 1, to: start) ?? start
+        case .weekly:
+            return calendar.date(byAdding: .weekOfYear, value: 1, to: start) ?? start
+        case .monthly:
+            return calendar.date(byAdding: .month, value: 1, to: start) ?? start
+        }
+    }
+    
+    func dateComponents(for frequency: HabitGoal.Frequency, value: Int) -> DateComponents {
+        switch frequency {
+        case .daily: return DateComponents(day: value)
+        case .weekly: return DateComponents(weekOfYear: value)
+        case .monthly: return DateComponents(month: value)
+        }
     }
 }

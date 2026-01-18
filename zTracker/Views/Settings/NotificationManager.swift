@@ -22,8 +22,6 @@ import UIKit
 
 // MARK: - NotificationsActionHandler
 
-/// A bridge for handling notification actions and state queries that require app data/models.
-/// Implement this and assign it to `NotificationsManager.shared.actionHandler` early in app launch.
 protocol NotificationsActionHandler: AnyObject, Sendable {
     func isHabitLoggedToday(habitID: UUID) async -> Bool
 
@@ -98,12 +96,6 @@ final class DefaultNotificationsActionHandler: NotificationsActionHandler {
 
 // MARK: - NotificationsManager
 
-/// Local notifications coordinator for zTracker.
-/// - Supports standard and provisional authorization.
-/// - Per-habit opt-in reminders at a user-selected time (Habit.reminder).
-/// - Automatic follow-up (time-sensitive) 30 minutes after the base reminder if not logged.
-/// - Quick actions per habit type (inline via App Intents where applicable).
-/// - Daily summary notification (“You have X habits remaining today.”).
 @MainActor
 final class NotificationsManager {
 

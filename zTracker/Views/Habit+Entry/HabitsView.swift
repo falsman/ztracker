@@ -75,7 +75,7 @@ struct HabitsView: View {
             min: 150, ideal: 200, max: 400)
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
-        .background(movingLinearGradient(selectedColor: .theme))
+        .background(MovingLinearGradient(selectedColor: .theme))
         #endif
         
         .toolbar {

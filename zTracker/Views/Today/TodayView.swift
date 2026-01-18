@@ -47,7 +47,7 @@ struct TodayView: View {
             }
             
             #if os(iOS)
-            .background(movingLinearGradient(selectedColor: .theme))
+            .background(MovingLinearGradient(selectedColor: .theme))
             .navigationBarTitleDisplayMode(.inline)
             .navigationTitle(Text(.now, style: .date))
             .navigationSubtitle(currentTime)

@@ -15,13 +15,11 @@ struct EntryEditorView: View {
     let date: Date
     let existingEntry: HabitEntry?
 
-    @State private var completed = false
-    @State private var timeHours = 0
-    @State private var timeMinutes = 03
-    @State private var timeDuration: Duration = .zero
-    @State private var ratingValue = 0
+    @State private var completed: Bool = false
+    @State private var timeDurationSeconds: Int64?
+    @State private var ratingValue: Int?
     @State private var numericValue: Double?
-    @State private var note = ""
+    @State private var note: String = ""
     
     @State private var updatedAt: Date?
         
@@ -92,7 +90,7 @@ struct EntryEditorView: View {
                 }
             }
             .presentationDetents([.medium, .large])
-            .tint(Color(habit.swiftUIColor))
+            .tint(habit.swiftUIColor)
             .onAppear { loadEntry() }
         }
     }
@@ -157,25 +155,12 @@ struct EntryEditorView: View {
         }
         
         completed = entryToUse?.completed ?? false
-            
-        if let seconds = entryToUse?.time?.components.seconds {
-            timeHours = Int(seconds) / 3600
-            timeMinutes = (Int(seconds) % 3600) / 60
-        } else {
-            timeHours = 0
-            timeMinutes = 0
-        }
-        
+        timeDurationSeconds = entryToUse?.durationSeconds ?? 0
         ratingValue = entryToUse?.ratValue ?? 3
         numericValue = entryToUse?.numValue
-        note = entryToUse?.note ?? ""
         
+        note = entryToUse?.note ?? ""
         updatedAt = entryToUse?.updatedAt ?? .now
-    }
-    
-    func updateDuration() {
-        let totalSeconds = (timeHours * 3600) + (timeMinutes * 60)
-        timeDuration = .seconds(totalSeconds)
     }
     
     @MainActor
@@ -184,7 +169,10 @@ struct EntryEditorView: View {
             _ = habit.createOrUpdateEntry(
                 for: date,
                 completed: { if case .boolean = habit.type { return completed } else { return nil } }(),
-                time: { if case .duration = habit.type { return .seconds(timeHours * 3600 + timeMinutes * 60) } else { return nil } }(),
+                time: {
+                    if case .duration = habit.type {
+                        return Duration(secondsComponent: Int64(timeDurationSeconds ?? 0), attosecondsComponent: 0)
+                } else { return nil } }(),
                 numValue: { if case .numeric = habit.type { return numericValue } else { return nil } }(),
                 ratValue: { if case .rating = habit.type { return ratingValue } else { return nil } }(),
                 note: note.isEmpty ? nil : note.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -197,7 +185,7 @@ struct EntryEditorView: View {
     private func ratingPicker(min: Int, max: Int) -> some View {
         HStack {
             ForEach(min...max, id: \.self) { value in
-                let isFilled = value <= ratingValue
+                let isFilled = value <= ratingValue ?? 3
 
                 Image(systemName: isFilled ? "star.fill" : "star")
                     .font(.title)
@@ -211,51 +199,32 @@ struct EntryEditorView: View {
     }
     
     private func durationPicker () -> some View {
-        HStack {
-            HStack {
-                Picker("hours", selection: $timeHours) {
-                    ForEach(0..<24) { hour in
-                        Text("\(hour)").tag(hour)
-                    }
-                }
-                Text("hours")
-            }
-            .padding(.horizontal)
-            .glassEffect(in: .rect(cornerRadius: 16))
-            
-            
-            HStack {
-                Picker("mins", selection: $timeMinutes) {
-                    ForEach(0..<60) { minute in
-                        Text("\(minute)").tag(minute)
-                    }
-                }
-                Text("mins")
-            }
-            .padding(.horizontal)
-            .glassEffect(in: .rect(cornerRadius: 16))
-            
+        VStack {
+            DatePicker("Duration", selection: Binding(
+                        get: {
+                            Date(timeInterval: TimeInterval(timeDurationSeconds ?? 0), since: unixEpoch)
+                        },
+                        set: { newDate in
+                            timeDurationSeconds = Int64(newDate.timeIntervalSince(unixEpoch))
+                        }
+                       ), displayedComponents: .hourAndMinute)
+            .labelsHidden()
+            .datePickerStyle(.wheel)
         }
         .frame(maxWidth: .infinity)
-        .onChange(of: timeHours) { updateDuration() }
-        .onChange(of: timeMinutes) { updateDuration() }
     }
     
     private func numericPicker(min: Double, max: Double, unit: String) -> some View {
         
         return VStack {
             HStack {
-                TextField(
-                    "Value",
-                    value: $numericValue,
-                    format: .number
-                )
-                .font(.title2)
-                .fontWeight(.semibold)
-                .multilineTextAlignment(.trailing)
-                #if os(iOS)
-                .keyboardType(.decimalPad)
-                #endif
+                TextField("Value", value: $numericValue, format: .number)
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .multilineTextAlignment(.trailing)
+                    #if os(iOS)
+                    .keyboardType(.decimalPad)
+                    #endif
 
                 Text(unit)
                     .font(.title2)
@@ -284,7 +253,7 @@ struct EntryEditorView: View {
     
     try? container.mainContext.save()
     
-    let habitToShow = habits[2]
+    let habitToShow = habits[1]
     
     let date = Date(timeInterval: 1000, since: .now)
     

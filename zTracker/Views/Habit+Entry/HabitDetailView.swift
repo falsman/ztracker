@@ -59,7 +59,7 @@ struct HabitDetailView: View {
                 }
                 .padding()
             }
-            .background(movingLinearGradient(selectedColor: habit.swiftUIColor))
+            .background(MovingLinearGradient(selectedColor: habit.swiftUIColor))
             
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
@@ -195,7 +195,7 @@ struct ChartSection: View {
                         x: .value("Date", entry.date),
                         y: .value("Value", normalizedValue(for: entry))
                     )
-                    .foregroundStyle(Color(habit.swiftUIColor))
+                    .foregroundStyle(habit.swiftUIColor)
                 }
             }
             .chartYAxis {

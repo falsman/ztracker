@@ -66,7 +66,7 @@ struct CalendarView: View {
             }
             
             #if os(iOS)
-            .background(movingLinearGradient(selectedColor: .theme))
+            .background(MovingLinearGradient(selectedColor: .theme))
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .navigationTitle("Calendar")

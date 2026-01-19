@@ -187,7 +187,7 @@ struct BasicInfoSection: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .pickerStyle(.segmented)
             .labelsHidden()
-            .disabled(existingHabit?.entries?.isEmpty == false)
+            .disabled(existingHabit?.entries.isEmpty == false)
             
             
             if case .rating = selectedType {

@@ -163,7 +163,6 @@ final class Habit {
         
         let raw: Double = rawValue(for: intervalEntries, type: type)
     
-        if target > 0 { return (raw, min(1.0, raw / target)) }
         return (raw, min(1.0, raw / target))
     }
     

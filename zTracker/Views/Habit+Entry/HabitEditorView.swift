@@ -323,7 +323,7 @@ struct GoalsSection: View {
                                         Date(timeInterval: TimeInterval(goalTarget), since: unixEpoch)
                                     },
                                     set: { timeInterval in
-                                        goalTarget = Double(timeInterval.timeIntervalSince(today))
+                                        goalTarget = Double(timeInterval.timeIntervalSince(unixEpoch))
                                     }
                                    ),
                                    displayedComponents: .hourAndMinute

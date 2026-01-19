@@ -134,6 +134,7 @@ final class Habit {
     func currentGoalStreak(reference: Date = today) -> Int {
         let frequency = type.goal.frequency
         let target = type.goal.target
+        guard target > 0 else { return 0 }
         
         var streak = 0
         var index = 0
@@ -152,7 +153,7 @@ final class Habit {
     func goalProgress() -> (rawValue: Double, rate: Double) {
         let frequency = type.goal.frequency
         let target = type.goal.target
-        guard target > 0 else { return 0 }
+        guard target > 0 else { return 1, 0 }
         
         let interval = periodInterval(forIndex: 0, frequency: frequency, reference: today)
         
@@ -163,7 +164,7 @@ final class Habit {
         let raw: Double = rawValue(for: intervalEntries, type: type)
     
         if target > 0 { return (raw, min(1.0, raw / target)) }
-        else { return (raw, 0) }
+        return (raw, min(1.0, raw / target))
     }
     
     func habitAverage(days: Int) -> Double {
@@ -220,7 +221,8 @@ private extension Habit {
         let calendar = Calendar.current
         let refStart = startOfPeriod(for: reference, frequency: frequency, calendar: calendar)
         let start = calendar.date(byAdding: dateComponents(for: frequency, value: -index), to: refStart) ?? refStart
-        let end = nextPeriodStart(after: start, frequency: frequency, calendar: calendar)
+        let nextStart = nextPeriodStart(after: start, frequency: frequency, calendar: calendar)
+        let end = calendar.date(byAdding: .nanosecond, value: -1, to: nextStart) ?? nextStart)
         return DateInterval(start: start, end: end)
     }
     

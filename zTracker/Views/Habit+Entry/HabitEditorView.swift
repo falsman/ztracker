@@ -21,7 +21,7 @@ struct HabitEditorView: View {
     @State private var selectedColor: AppColor = .theme
     @State private var icon = ""
     
-    @State private var goal: HabitGoal = .init(target: 0, frequency: .daily)
+    @State private var goal: HabitGoal = .init(target: 1, frequency: .daily)
     
     @State private var reminder: Date?
     

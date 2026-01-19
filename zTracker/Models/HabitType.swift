@@ -15,10 +15,10 @@ struct HabitGoal: Codable, Hashable {
 }
 
 enum HabitType: Codable, Hashable {
-    case boolean(goal: HabitGoal?)
-    case duration(goal: HabitGoal?)
-    case rating(min: Int, max: Int, goal: HabitGoal?)
-    case numeric(min: Double, max: Double, unit: String, goal: HabitGoal?)
+    case boolean(goal: HabitGoal)
+    case duration(goal: HabitGoal)
+    case rating(min: Int, max: Int, goal: HabitGoal)
+    case numeric(min: Double, max: Double, unit: String, goal: HabitGoal)
     
     var displayName: String {
         switch self {
@@ -29,7 +29,7 @@ enum HabitType: Codable, Hashable {
         }
     }
     
-    var goal: HabitGoal? {
+    var goal: HabitGoal {
         switch self {
         case .boolean(let goal), .duration(let goal), .rating(_, _, let goal), .numeric(_, _, _, let goal):
             return goal

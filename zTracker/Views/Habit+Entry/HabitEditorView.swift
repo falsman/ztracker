@@ -17,14 +17,11 @@ struct HabitEditorView: View {
     let existingHabit: Habit?
     
     @State private var title = ""
-    @State private var selectedType: HabitType = .boolean(goal: nil)
+    @State private var selectedType: HabitType = .boolean(goal: .init(target: 1, frequency: .daily))
     @State private var selectedColor: AppColor = .theme
     @State private var icon = ""
     
-    @State private var goalState: Bool = false
-    @State private var goalTarget: Double?
-    @State private var goalFrequency: HabitGoal.Frequency?
-    var goalInfoMissing: Bool { goalState && (goalTarget == nil || goalFrequency == nil) }
+    @State private var goal: HabitGoal = .init(target: 1, frequency: .daily)
     
     @State private var reminder: Date?
     
@@ -63,7 +60,7 @@ struct HabitEditorView: View {
             
             ScrollView {
                 
-                BasicInfoSection(title: $title, selectedType: $selectedType, ratingMin: $ratingMin, ratingMax: $ratingMax, numericMin: $numericMin, numericMax: $numericMax, numericUnit: $numericUnit, minMaxError: minMaxError, existingHabit: existingHabit)
+                BasicInfoSection(title: $title, selectedType: $selectedType, ratingMin: $ratingMin, ratingMax: $ratingMax, numericMin: $numericMin, numericMax: $numericMax, numericUnit: $numericUnit, goal: $goal, minMaxError: minMaxError, existingHabit: existingHabit)
                     .glassEffect(in: .rect(cornerRadius: 16))
                     .padding([.top, .horizontal])
                 
@@ -71,7 +68,7 @@ struct HabitEditorView: View {
                     .glassEffect(in: .rect(cornerRadius: 16))
                     .padding(.horizontal)
                 
-                GoalsSection(goalState: $goalState, goalTarget: $goalTarget, goalFrequency: $goalFrequency, goalInfoMissing: goalInfoMissing)
+                GoalsSection(goalTarget: $goal.target, goalFrequency: $goal.frequency, selectedType: $selectedType)
                     .glassEffect(in: .rect(cornerRadius: 16))
                     .padding(.horizontal)
 
@@ -99,7 +96,6 @@ struct HabitEditorView: View {
                     Button("Save", systemImage: "checkmark", role: .confirm) { saveHabit(); dismiss() }
                         .disabled(title.isEmpty)
                         .disabled(minMaxError)
-                        .disabled(goalInfoMissing)
                 }
             }
         }
@@ -116,6 +112,7 @@ struct HabitEditorView: View {
         selectedColor = AppColor(rawValue: habit.color)!
         icon = habit.icon ?? ""
         reminder = habit.reminder
+        goal = habit.type.goal
         
         switch habit.type {
         case .boolean(let goal): selectedType = .boolean(goal: goal)
@@ -123,22 +120,18 @@ struct HabitEditorView: View {
         case .rating(let min, let max, let goal): ratingMin = min; ratingMax = max; selectedType = .rating(min: min, max: max, goal: goal)
         case .numeric(let min, let max, let unit, let goal): numericMin = min; numericMax = max; numericUnit = unit; selectedType = .numeric(min: min, max: max, unit: unit, goal: goal)
         }
-        
-        if habit.type.goal != nil {
-            goalState = true
-            goalTarget = habit.type.goal?.target ?? 0
-            goalFrequency = habit.type.goal?.frequency ?? .daily
-        }
     }
         
     @MainActor
     private func saveHabit() {
         let type: HabitType
+        let goal: HabitGoal = .init(target: goal.target, frequency: goal.frequency)
+        
         switch selectedType {
-        case .boolean: type = .boolean(goal: nil)
-        case .duration: type = .duration(goal: nil)
-        case .rating: type = .rating(min: ratingMin ?? 0, max: ratingMax ?? 0, goal: nil)
-        case .numeric: type = .numeric(min: numericMin ?? 0, max: numericMax ?? 0, unit: numericUnit.trimmingCharacters(in: .whitespacesAndNewlines), goal: nil)
+        case .boolean: type = .boolean(goal: goal)
+        case .duration: type = .duration(goal: goal)
+        case .rating: type = .rating(min: ratingMin ?? 0, max: ratingMax ?? 0, goal: goal)
+        case .numeric: type = .numeric(min: numericMin ?? 0, max: numericMax ?? 0, unit: numericUnit.trimmingCharacters(in: .whitespacesAndNewlines), goal: goal)
         }
         
         if let habit = existingHabit {
@@ -175,6 +168,8 @@ struct BasicInfoSection: View {
     @Binding var numericMax: Double?
     @Binding var numericUnit: String
     
+    @Binding var goal: HabitGoal
+    
     var minMaxError: Bool
     let existingHabit: Habit?
     
@@ -184,15 +179,15 @@ struct BasicInfoSection: View {
                 .font(.title)
             
             Picker("Habit Type", selection: $selectedType) {
-                Text("Checkmark").tag(HabitType.boolean(goal: nil))
-                Text("Duration").tag(HabitType.duration(goal: nil))
-                Text("Rating").tag(HabitType.rating(min: ratingMin ?? 0, max: ratingMax ?? 5, goal: nil))
-                Text("Number").tag(HabitType.numeric(min: numericMin ?? 0, max: numericMax ?? 100, unit: numericUnit, goal: nil))
+                Text("Checkmark").tag(HabitType.boolean(goal: goal))
+                Text("Duration").tag(HabitType.duration(goal: goal))
+                Text("Rating").tag(HabitType.rating(min: ratingMin ?? 0, max: ratingMax ?? 5, goal: goal))
+                Text("Number").tag(HabitType.numeric(min: numericMin ?? 0, max: numericMax ?? 100, unit: numericUnit, goal: goal))
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .pickerStyle(.segmented)
             .labelsHidden()
-            .disabled(existingHabit != nil)
+            .disabled(existingHabit?.entries.isEmpty == false)
             
             
             if case .rating = selectedType {
@@ -307,22 +302,42 @@ struct AppearanceSection: View {
 }
 
 struct GoalsSection: View {
-    @Binding var goalState: Bool
-    @Binding var goalTarget: Double?
-    @Binding var goalFrequency: HabitGoal.Frequency?
+    @AppStorage("userGoalState") private var userGoalState: Bool = false
+
+    @Binding var goalTarget: Double
+    @Binding var goalFrequency: HabitGoal.Frequency
+    @Binding var selectedType: HabitType
     
-    var goalInfoMissing: Bool
+    @State private var datePickerDate: Date = today
     
     var body: some View {
         VStack {
-            Toggle("Set Goal", isOn: $goalState)
+            Toggle("Set Goal", isOn: $userGoalState)
             
-            if goalState {
+            if userGoalState {
                 HStack {
-                    TextField("Goal Value", value: $goalTarget, format: .number)
-                        #if os(iOS)
-                        .keyboardType(.decimalPad)
-                        #endif
+                    if case .duration = selectedType {
+                        DatePicker("Goal Duration",
+                                   selection: Binding(
+                                    get: {
+                                        Date(timeInterval: TimeInterval(goalTarget), since: unixEpoch)
+                                    },
+                                    set: { timeInterval in
+                                        goalTarget = Double(timeInterval.timeIntervalSince(unixEpoch))
+                                    }
+                                   ),
+                                   displayedComponents: .hourAndMinute
+                        )
+                        .labelsHidden()
+                        
+                    } else {
+                        TextField("Goal Value", value: $goalTarget, format: .number)
+                            #if os(iOS)
+                            .keyboardType(.decimalPad)
+                            #endif
+                    }
+                    
+                    Spacer()
                     
                     Picker("Goal Frequency", selection: $goalFrequency) {
                         ForEach(HabitGoal.Frequency.allCases, id: \.self) { frequency in
@@ -331,10 +346,6 @@ struct GoalsSection: View {
                         }
                     }
                 }
-            }
-    
-            if goalInfoMissing {
-                Text("Enter goal value and frequency.").foregroundStyle(.red).font(.caption).frame(maxWidth: .infinity, alignment: .leading)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -374,7 +385,7 @@ struct ReminderSection: View {
     
     try? container.mainContext.save()
     
-    let habitToShow = habits[2]
+    let habitToShow = habits[0]
     
     return Text("Parent Backgroudn View")
         .sheet(isPresented: .constant(true)) {
@@ -392,7 +403,7 @@ struct ReminderSection: View {
     
     try? container.mainContext.save()
     
-    let habitToShow = habits[2]
+    let habitToShow = habits[0]
     
     return HabitEditorView(habit: habitToShow)
         .modelContainer(container)

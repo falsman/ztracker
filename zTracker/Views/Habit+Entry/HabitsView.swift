@@ -158,8 +158,8 @@ struct HabitRow: View {
                 if let icon = habit.icon {
                     ZStack {
                         Circle()
-                            .trim(from: 0, to: habit.completionRate(days: summaryTimeframe.days))
-                            .fill(habit.swiftUIColor.secondary)
+                            .trim(from: 0, to: habit.goalProgress().rate)
+                            .fill(Color(habit.swiftUIColor).secondary)
                             .frame(width: 40, height: 40)
                         Image(systemName: icon)
                     }

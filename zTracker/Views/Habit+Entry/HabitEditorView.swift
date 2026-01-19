@@ -17,7 +17,7 @@ struct HabitEditorView: View {
     let existingHabit: Habit?
     
     @State private var title = ""
-    @State private var selectedType: HabitType = .boolean(goal: .init(target: 0, frequency: .daily))
+    @State private var selectedType: HabitType = .boolean(goal: .init(target: 1, frequency: .daily))
     @State private var selectedColor: AppColor = .theme
     @State private var icon = ""
     

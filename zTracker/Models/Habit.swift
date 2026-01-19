@@ -153,7 +153,7 @@ final class Habit {
     func goalProgress() -> (rawValue: Double, rate: Double) {
         let frequency = type.goal.frequency
         let target = type.goal.target
-        guard target > 0 else { return 1, 0 }
+        guard target > 0 else { return (1.0, 0.0) }
         
         let interval = periodInterval(forIndex: 0, frequency: frequency, reference: today)
         

@@ -102,11 +102,11 @@ struct StatsOverviewView: View {
     }
     
     private func longestStreak() -> (habit: Habit, streakCount: Int) {
-        var currentLongest = (habit: activeHabits.first!, streakCount: activeHabits.first!.currentStreak())
+        var currentLongest = (habit: activeHabits.first!, streakCount: activeHabits.first!.currentGoalStreak())
         
         for habit in activeHabits {
-            if habit.currentStreak() > currentLongest.streakCount {
-                currentLongest = (habit: habit, streakCount: habit.currentStreak())
+            if habit.currentGoalStreak() > currentLongest.streakCount {
+                currentLongest = (habit: habit, streakCount: habit.currentGoalStreak())
             }
             
         }

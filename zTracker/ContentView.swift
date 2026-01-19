@@ -17,7 +17,7 @@ struct ContentView: View {
             Tab("Insights", systemImage: "chart.xyaxis.line") { InsightsView() }
             Tab("Settings", systemImage: "gear") { SettingsView() }
         }
-        .background(movingLinearGradient(selectedColor: .theme))
+        .background(MovingLinearGradient(selectedColor: .theme))
     }
 }
 

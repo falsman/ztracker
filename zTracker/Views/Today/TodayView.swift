@@ -47,7 +47,7 @@ struct TodayView: View {
             }
             
             #if os(iOS)
-            .background(movingLinearGradient(selectedColor: .theme))
+            .background(MovingLinearGradient(selectedColor: .theme))
             .navigationBarTitleDisplayMode(.inline)
             .navigationTitle(Text(.now, style: .date))
             .navigationSubtitle(currentTime)
@@ -67,7 +67,7 @@ struct TodayView: View {
         }
         .sheet(item: $selectedHabit) {
             habit in EntryEditorView(habit: habit, date: today)
-                .background(Color(.clear))
+                .background(.clear)
         }
     }
 }
@@ -118,10 +118,10 @@ struct HabitCard: View {
             
             Spacer()
             
-            if habit.currentStreak() > 0 {
+            if habit.currentGoalStreak() > 0 {
                 HStack {
                     Image(systemName: "flame").font(.caption)
-                    Text("\(habit.currentStreak())").font(.caption)
+                    Text("\(habit.currentGoalStreak())").font(.caption)
                 }
                 .foregroundStyle(habit.swiftUIColor.secondary)
             }

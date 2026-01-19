@@ -75,7 +75,7 @@ struct HabitsView: View {
             min: 150, ideal: 200, max: 400)
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
-        .background(movingLinearGradient(selectedColor: .theme))
+        .background(MovingLinearGradient(selectedColor: .theme))
         #endif
         
         .toolbar {
@@ -128,10 +128,8 @@ struct ArchiveHabitButton: View {
     
     var body: some View {
         Button("Archive Habit", systemImage: "archivebox") {
-            Task {
-                habit.isArchived = true
-                habit.sortIndex = -habit.sortIndex
-            }
+            habit.isArchived = true
+            habit.sortIndex = -habit.sortIndex
         }
     }
 }
@@ -142,10 +140,8 @@ struct UnarchiveHabitButton: View {
     
     var body: some View {
         Button("Unarchive Habit", systemImage: "arrow.up.bin") {
-            Task {
-                habit.isArchived = false
-                habit.sortIndex = totalHabitsCount + 1
-            }
+            habit.isArchived = false
+            habit.sortIndex = totalHabitsCount + 1
         }
     }
 }
@@ -162,8 +158,8 @@ struct HabitRow: View {
                 if let icon = habit.icon {
                     ZStack {
                         Circle()
-                            .trim(from: 0, to: habit.completionRate(days: summaryTimeframe.days))
-                            .fill(habit.swiftUIColor.secondary)
+                            .trim(from: 0, to: habit.goalProgress().rate)
+                            .fill(Color(habit.swiftUIColor).secondary)
                             .frame(width: 40, height: 40)
                         Image(systemName: icon)
                     }

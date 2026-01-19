@@ -42,7 +42,9 @@ struct StreakLeaderboard: View {
                         HStack {
                             Image(systemName: "flame")
                                 .foregroundStyle(.orange)
-                            Text("\(habit.currentGoalStreak()) \(habit.type.goal.frequency.rawValue.lowercased())s")
+                            let streak = habit.currentGoalStreak()
+                            let unit = habit.type.goal.frequency.rawValue.lowercased()
+                            Text("\(streak) \(unit)\(streak == 1 ? "" : "s")")
                                 .font(.subheadline)
                                 .fontWeight(.semibold)
                         }

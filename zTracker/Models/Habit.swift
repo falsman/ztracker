@@ -221,7 +221,7 @@ private extension Habit {
         let refStart = startOfPeriod(for: reference, frequency: frequency, calendar: calendar)
         let start = calendar.date(byAdding: dateComponents(for: frequency, value: -index), to: refStart) ?? refStart
         let nextStart = nextPeriodStart(after: start, frequency: frequency, calendar: calendar)
-        let end = calendar.date(byAdding: .nanosecond, value: -1, to: nextStart) ?? nextStart)
+        let end = calendar.date(byAdding: .nanosecond, value: -1, to: nextStart) ?? nextStart
         return DateInterval(start: start, end: end)
     }
     

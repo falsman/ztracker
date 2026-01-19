@@ -320,7 +320,7 @@ struct GoalsSection: View {
                         DatePicker("Goal Duration",
                                    selection: Binding(
                                     get: {
-                                        Date(timeInterval: TimeInterval(goalTarget), since: today)
+                                        Date(timeInterval: TimeInterval(goalTarget), since: unixEpoch)
                                     },
                                     set: { timeInterval in
                                         goalTarget = Double(timeInterval.timeIntervalSince(today))

@@ -22,9 +22,14 @@ struct zTrackerApp: App {
     @State private var needsPicker = DataStoreManager.shared.needsLocationPicker
     
     var sharedContainer: ModelContainer?
-    private let notificationDelegate = NotificationDelegate()
 
-    init() { UNUserNotificationCenter.current().delegate = notificationDelegate }
+    @State private var notificationDelegate: NotificationDelegate?
+    private let notificationsActionHandler = DefaultNotificationsActionHandler()
+
+    init() {
+        NotificationsManager.shared.actionHandler = notificationsActionHandler
+    }
+    
     
     var body: some Scene {
         WindowGroup {
@@ -58,6 +63,10 @@ struct zTrackerApp: App {
             let tempContainer = try ModelContainer(for: schema, configurations: [modelConfigurations])
             
             container = tempContainer
+            
+            let delegate = NotificationDelegate(container: tempContainer)
+            UNUserNotificationCenter.current().delegate = delegate
+            self.notificationDelegate = delegate
             
             #if DEBUG
             SampleDataSeeder.seedIfNeeded(context: tempContainer.mainContext)

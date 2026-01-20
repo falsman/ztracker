@@ -153,34 +153,27 @@ struct HealthKitSection: View {
 
 // TODO: interactive reminders!
 struct RemindersSection: View {
-    @AppStorage("notificationsEnabled") private var notificationsEnabled = false
+    @AppStorage("notificationsOn") private var notificationsOn = false
+    @State private var actuallyAuthorized = false
 
     var body: some View {
         VStack {
-            Toggle("Reminders", isOn: $notificationsEnabled)
-                .onChange(of: notificationsEnabled) {
+            Toggle("Reminders", isOn: $notificationsOn)
+            
+                .onChange(of: notificationsOn) {
+                    if notificationsOn { NotificationsManager.remindersTurnedOn() }
+                    else { NotificationsManager.remindersTurnedOff() }
+                }
+                .onAppear {
                     Task {
-                        if notificationsEnabled {
-                            let granted = try? await UNUserNotificationCenter.current()
-                                .requestAuthorization(options: [.alert, .sound, .badge])
-                            if granted != true { notificationsEnabled = false }
-                        } else {
-                            UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
-                            notificationsEnabled = false
-                        }
+                        let status = await NotificationsManager.shared.authorizationStatus()
+                        if status == .denied && notificationsOn { notificationsOn = false }
                     }
                 }
         }
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
         .glassEffect(in: .rect(cornerRadius: 16))
-        
-        .onAppear {
-            Task {
-                let settings = await UNUserNotificationCenter.current().notificationSettings()
-                notificationsEnabled = settings.authorizationStatus == .authorized
-            }
-        }
     }
 }
 

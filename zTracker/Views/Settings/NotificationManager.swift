@@ -54,7 +54,7 @@ final class DefaultNotificationsActionHandler: NotificationsActionHandler {
         do {
             _ = try intent.perform()
             await NotificationsManager.shared.cancelHabitFollowupReminders(habitID: habit.id)
-        } catch { }
+        } catch { print("Could not handle boolean log for '\(habit.title)': \(error)") }
     }
     
     func handleLogNumeric(habit: Habit, value: Double) async {
@@ -65,7 +65,7 @@ final class DefaultNotificationsActionHandler: NotificationsActionHandler {
         do {
             _ = try intent.perform()
             await NotificationsManager.shared.cancelHabitFollowupReminders(habitID: habit.id)
-        } catch { }
+        } catch { print("Could not handle numeric log for '\(habit.title)': \(error)") }
     }
     
     func handleLogRating(habit: Habit, value: Int) async {
@@ -76,7 +76,7 @@ final class DefaultNotificationsActionHandler: NotificationsActionHandler {
         do {
             _ = try intent.perform()
             await NotificationsManager.shared.cancelHabitFollowupReminders(habitID: habit.id)
-        } catch { }
+        } catch { print("Could not handle rating log for '\(habit.title)': \(error)") }
     }
     
     func remainingHabitsCountToday() async -> Int {
@@ -243,7 +243,7 @@ final class NotificationsManager {
 
         do {
             try await UNUserNotificationCenter.current().add(request)
-        } catch { }
+        } catch { print("Error scheduling notification: \(error)") }
 
         // schedule a one-off follow-up for the next occurrence + 30 minutes.
         await scheduleNextOccurrenceFollowUp(habit: habit)
@@ -254,12 +254,14 @@ final class NotificationsManager {
         let basePrefix = "habit.\(habitID.uuidString)"
         await center.removePendingNotificationRequests(withIdentifiersMatchingPrefix: basePrefix)
         center.removeDeliveredNotifications(withIdentifiers: [basePrefix])
+        print("Removed habit reminders")
     }
 
     func cancelHabitFollowupReminders(habitID: UUID) async {
         let center = UNUserNotificationCenter.current()
         let followPrefix = "habit.\(habitID.uuidString).followup"
         await center.removePendingNotificationRequests(withIdentifiersMatchingPrefix: followPrefix)
+        print("Removed follow-up reminders")
     }
 
     
@@ -278,7 +280,7 @@ final class NotificationsManager {
         let request = UNNotificationRequest(identifier: followUpID, content: content, trigger: trigger)
         do {
             try await UNUserNotificationCenter.current().add(request)
-        } catch { }
+        } catch { print("Error scheduling follow-up: \(error)") }
     }
 
     /// Computes next occurrence of the given time-of-day and schedules a one-off follow-up at +30m.
@@ -307,7 +309,7 @@ final class NotificationsManager {
         
         do {
             try await UNUserNotificationCenter.current().add(req)
-        } catch { }
+        } catch { print("Error scheduling next occurance follow up: \(error)")}
     }
 
     // MARK: - Scheduling (Daily Summary)
@@ -337,9 +339,7 @@ final class NotificationsManager {
         let request = UNNotificationRequest(identifier: "summary.daily", content: content, trigger: trigger)
         do {
             try await UNUserNotificationCenter.current().add(request)
-        } catch {
-            // Handle scheduling error if necessary.
-        }
+        } catch { print("Error scheduling daily summary: \(error)") }
     }
 
     /// Cancels the scheduled daily summary notification.
@@ -371,7 +371,6 @@ final class NotificationsManager {
 
         // Store only property list types in userInfo
         content.userInfo["habitID"] = habitID.uuidString
-        content.userInfo["habitType"] = type
         content.userInfo["isFollowUp"] = isFollowUp
 
         return content

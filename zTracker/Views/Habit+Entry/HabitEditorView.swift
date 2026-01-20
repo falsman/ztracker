@@ -154,7 +154,7 @@ struct HabitEditorView: View {
                 sortIndex: nextSortIndex
             )
             context.insert(habit)
-//            if reminder != nil { Task { await scheduleNotification(for: habit) }}
+            if reminder != nil { Task { await NotificationsManager.shared.scheduleHabitReminder(habit: habit) }}
 //TODO: - add support
         }
         try? context.save()

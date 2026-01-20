@@ -154,6 +154,7 @@ struct HealthKitSection: View {
 // TODO: interactive reminders!
 struct RemindersSection: View {
     @AppStorage("notificationsOn") private var notificationsOn = false
+    @State private var actuallyAuthorized = false
 
     var body: some View {
         VStack {
@@ -162,6 +163,12 @@ struct RemindersSection: View {
                 .onChange(of: notificationsOn) {
                     if notificationsOn { NotificationsManager.remindersTurnedOn() }
                     else { NotificationsManager.remindersTurnedOff() }
+                }
+                .onAppear {
+                    Task {
+                        let status = await NotificationsManager.shared.authorizationStatus()
+                        if status == .denied && notificationsOn { notificationsOn = false }
+                    }
                 }
         }
         .padding()

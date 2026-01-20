@@ -148,7 +148,7 @@ struct HabitEditorView: View {
                 title: title.trimmingCharacters(in: .whitespacesAndNewlines),
                 type: type,
                 color: selectedColor.rawValue,
-                icon: icon,
+                icon: icon.isEmpty ? nil : icon,
                 createdAt: .now,
                 reminder: reminder,
                 sortIndex: nextSortIndex

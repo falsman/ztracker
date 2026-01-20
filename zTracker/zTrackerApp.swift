@@ -23,11 +23,10 @@ struct zTrackerApp: App {
     
     var sharedContainer: ModelContainer?
 
-    private let notificationDelegate = NotificationDelegate()
+    @State private var notificationDelegate: NotificationDelegate?
     private let notificationsActionHandler = DefaultNotificationsActionHandler()
 
     init() {
-        UNUserNotificationCenter.current().delegate = notificationDelegate
         NotificationsManager.shared.actionHandler = notificationsActionHandler
     }
     
@@ -64,6 +63,10 @@ struct zTrackerApp: App {
             let tempContainer = try ModelContainer(for: schema, configurations: [modelConfigurations])
             
             container = tempContainer
+            
+            let delegate = NotificationDelegate(container: tempContainer)
+            UNUserNotificationCenter.current().delegate = delegate
+            self.notificationDelegate = delegate
             
             #if DEBUG
             SampleDataSeeder.seedIfNeeded(context: tempContainer.mainContext)

@@ -20,7 +20,7 @@ struct LogBooleanHabitIntent: AppIntent {
     @Parameter(title: "Completion", default: true) var completion: Bool
     @Parameter(title: "Date", default: today) var date: Date
     
-    func perform() async throws -> some IntentResult & ProvidesDialog & ShowsSnippetView {
+    func perform() throws -> some IntentResult & ProvidesDialog & ShowsSnippetView {
         let container = try getModelContainer()
         let context = ModelContext(container)
         

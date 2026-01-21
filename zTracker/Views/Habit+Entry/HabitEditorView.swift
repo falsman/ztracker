@@ -125,11 +125,9 @@ struct HabitEditorView: View {
             selectedType = .numeric(min: min, max: max, unit: unit, goal: goalToSave)
          }
         }
-    }
         
     @MainActor
     private func saveHabit() {
-        let goal: HabitGoal = .init(target: goalToSave.target, frequency: goalToSave.frequency, state: goalToSave.state)
         
         switch selectedType {
         case .boolean: selectedType = .boolean(goal: goalToSave)

@@ -12,6 +12,7 @@ struct HabitGoal: Codable, Hashable {
     
     var target: Double  // For Duration (seconds), Numeric (value), Boolean/Rating (count)
     var frequency: Frequency
+    var state: Bool = false
 }
 
 enum HabitType: Codable, Hashable {

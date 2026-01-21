@@ -115,10 +115,10 @@ struct HabitEditorView: View {
         goalToSave = habit.type.goal
         
         switch habit.type {
-        case .boolean(let goal): selectedType = .boolean(goal: goalToSave)
-        case .duration(let goal): selectedType = .duration(goal: goalToSave)
-        case .rating(let min, let max, let goal): ratingMin = min; ratingMax = max; selectedType = .rating(min: min, max: max, goal: goalToSave)
-        case .numeric(let min, let max, let unit, let goal): numericMin = min; numericMax = max; numericUnit = unit; selectedType = .numeric(min: min, max: max, unit: unit, goal: goalToSave)
+        case .boolean: selectedType = .boolean(goal: goalToSave)
+        case .duration: selectedType = .duration(goal: goalToSave)
+        case .rating: selectedType = .rating(min: ratingMin ?? 1, max: ratingMax ?? 5, goal: goalToSave)
+        case .numeric: selectedType = .numeric(min: numericMin ?? 0, max: numericMax ?? 100, unit: numericUnit, goal: goalToSave)
         }
     }
         
@@ -154,7 +154,6 @@ struct HabitEditorView: View {
             )
             context.insert(habit)
             if reminderToSave != nil { Task { await NotificationsManager.shared.scheduleHabitReminder(habit: habit) }}
-//TODO: - add support
         }
         try? context.save()
     }

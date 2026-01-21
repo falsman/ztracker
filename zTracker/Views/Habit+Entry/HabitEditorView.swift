@@ -16,14 +16,14 @@ struct HabitEditorView: View {
     
     let existingHabit: Habit?
     
-    @State private var title = ""
+    @State private var titleToSave = ""
     @State private var selectedType: HabitType = .boolean(goal: .init(target: 1, frequency: .daily))
     @State private var selectedColor: AppColor = .theme
-    @State private var icon = ""
+    @State private var iconToSave = ""
     
-    @State private var goal: HabitGoal = .init(target: 1, frequency: .daily)
+    @State private var goalToSave: HabitGoal = .init(target: 1, frequency: .daily)
     
-    @State private var reminder: Date?
+    @State private var reminderToSave: Date?
     
     @State private var ratingMin: Int?
     @State private var ratingMax: Int?
@@ -60,19 +60,19 @@ struct HabitEditorView: View {
             
             ScrollView {
                 
-                BasicInfoSection(title: $title, selectedType: $selectedType, ratingMin: $ratingMin, ratingMax: $ratingMax, numericMin: $numericMin, numericMax: $numericMax, numericUnit: $numericUnit, goal: $goal, minMaxError: minMaxError, existingHabit: existingHabit)
+                BasicInfoSection(title: $titleToSave, selectedType: $selectedType, ratingMin: $ratingMin, ratingMax: $ratingMax, numericMin: $numericMin, numericMax: $numericMax, numericUnit: $numericUnit, goal: $goalToSave, minMaxError: minMaxError, existingHabit: existingHabit)
                     .glassEffect(in: .rect(cornerRadius: 16))
                     .padding([.top, .horizontal])
                 
-                AppearanceSection(selectedColor: $selectedColor, icon: $icon, showSymbolPicker: $showSymbolPicker)
+                AppearanceSection(selectedColor: $selectedColor, icon: $iconToSave, showSymbolPicker: $showSymbolPicker)
                     .glassEffect(in: .rect(cornerRadius: 16))
                     .padding(.horizontal)
                 
-                GoalsSection(goalTarget: $goal.target, goalFrequency: $goal.frequency, selectedType: $selectedType)
+                GoalsSection(userGoalState: $goalToSave.state, goalTarget: $goalToSave.target, goalFrequency: $goalToSave.frequency, selectedType: $selectedType)
                     .glassEffect(in: .rect(cornerRadius: 16))
                     .padding(.horizontal)
 
-                ReminderSection(reminder: $reminder, habitID: existingHabit?.id ?? UUID())
+                ReminderSection(reminder: $reminderToSave, habitID: existingHabit?.id ?? UUID())
                     .glassEffect(in: .rect(cornerRadius: 16))
                     .padding(.horizontal)
                 
@@ -94,7 +94,7 @@ struct HabitEditorView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save", systemImage: "checkmark", role: .confirm) { saveHabit(); dismiss() }
-                        .disabled(title.isEmpty)
+                        .disabled(titleToSave.isEmpty)
                         .disabled(minMaxError)
                 }
             }
@@ -108,53 +108,52 @@ struct HabitEditorView: View {
     private func loadHabit() {
         guard let habit = existingHabit else { return }
         
-        title = habit.title
+        titleToSave = habit.title
         selectedColor = AppColor(rawValue: habit.color)!
-        icon = habit.icon ?? ""
-        reminder = habit.reminder
-        goal = habit.type.goal
+        iconToSave = habit.icon ?? ""
+        reminderToSave = habit.reminder
+        goalToSave = habit.type.goal
         
         switch habit.type {
-        case .boolean(let goal): selectedType = .boolean(goal: goal)
-        case .duration(let goal): selectedType = .duration(goal: goal)
-        case .rating(let min, let max, let goal): ratingMin = min; ratingMax = max; selectedType = .rating(min: min, max: max, goal: goal)
-        case .numeric(let min, let max, let unit, let goal): numericMin = min; numericMax = max; numericUnit = unit; selectedType = .numeric(min: min, max: max, unit: unit, goal: goal)
+        case .boolean(let goal): selectedType = .boolean(goal: goalToSave)
+        case .duration(let goal): selectedType = .duration(goal: goalToSave)
+        case .rating(let min, let max, let goal): ratingMin = min; ratingMax = max; selectedType = .rating(min: min, max: max, goal: goalToSave)
+        case .numeric(let min, let max, let unit, let goal): numericMin = min; numericMax = max; numericUnit = unit; selectedType = .numeric(min: min, max: max, unit: unit, goal: goalToSave)
         }
     }
         
     @MainActor
     private func saveHabit() {
-        let type: HabitType
-        let goal: HabitGoal = .init(target: goal.target, frequency: goal.frequency)
+        let goal: HabitGoal = .init(target: goalToSave.target, frequency: goalToSave.frequency, state: goalToSave.state)
         
         switch selectedType {
-        case .boolean: type = .boolean(goal: goal)
-        case .duration: type = .duration(goal: goal)
-        case .rating: type = .rating(min: ratingMin ?? 0, max: ratingMax ?? 0, goal: goal)
-        case .numeric: type = .numeric(min: numericMin ?? 0, max: numericMax ?? 0, unit: numericUnit.trimmingCharacters(in: .whitespacesAndNewlines), goal: goal)
+        case .boolean: selectedType = .boolean(goal: goalToSave)
+        case .duration: selectedType = .duration(goal: goalToSave)
+        case .rating: selectedType = .rating(min: ratingMin ?? 1, max: ratingMax ?? 5, goal: goalToSave)
+        case .numeric: selectedType = .numeric(min: numericMin ?? 0, max: numericMax ?? 100, unit: numericUnit.trimmingCharacters(in: .whitespacesAndNewlines), goal: goalToSave)
         }
         
         if let habit = existingHabit {
-            habit.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
-            habit.type = type
+            habit.title = titleToSave.trimmingCharacters(in: .whitespacesAndNewlines)
+            habit.type = selectedType
             habit.color = selectedColor.rawValue
-            habit.icon = icon.isEmpty ? nil : icon
-            if habit.reminder != reminder {
-                habit.reminder = reminder
+            habit.icon = iconToSave.isEmpty ? nil : iconToSave
+            if habit.reminder != reminderToSave {
+                habit.reminder = reminderToSave
                 Task { await NotificationsManager.shared.scheduleHabitReminder(habit: habit) }
             }
         } else {
             let habit = Habit(
-                title: title.trimmingCharacters(in: .whitespacesAndNewlines),
-                type: type,
+                title: titleToSave.trimmingCharacters(in: .whitespacesAndNewlines),
+                type: selectedType,
                 color: selectedColor.rawValue,
-                icon: icon.isEmpty ? nil : icon,
+                icon: iconToSave.isEmpty ? nil : iconToSave,
                 createdAt: .now,
-                reminder: reminder,
+                reminder: reminderToSave,
                 sortIndex: nextSortIndex
             )
             context.insert(habit)
-            if reminder != nil { Task { await NotificationsManager.shared.scheduleHabitReminder(habit: habit) }}
+            if reminderToSave != nil { Task { await NotificationsManager.shared.scheduleHabitReminder(habit: habit) }}
 //TODO: - add support
         }
         try? context.save()
@@ -306,8 +305,7 @@ struct AppearanceSection: View {
 }
 
 struct GoalsSection: View {
-    @AppStorage("userGoalState") private var userGoalState: Bool = false
-
+    @Binding var userGoalState: Bool
     @Binding var goalTarget: Double
     @Binding var goalFrequency: HabitGoal.Frequency
     @Binding var selectedType: HabitType

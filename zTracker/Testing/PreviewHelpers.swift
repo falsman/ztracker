@@ -133,7 +133,7 @@ struct PreviewHelpers {
         Habit(
             id: UUID(),
             title: "Mood",
-            type: .rating(min: 1, max: 5, goal: .init(target: 4, frequency: .weekly)),
+            type: .rating(min: 0, max: 5, goal: .init(target: 4, frequency: .weekly)),
             color: "pink",
             icon: "face.smiling",
             isArchived: false,
@@ -166,7 +166,7 @@ struct PreviewHelpers {
         Habit(
             id: UUID(),
             title: "Sleep Quality",
-            type: .rating(min: 1, max: 5, goal: .init(target: 1, frequency: .daily)),
+            type: .rating(min: 0, max: 5, goal: .init(target: 1, frequency: .daily)),
             color: "orange",
             icon: "figure.dance",
             isArchived: true,

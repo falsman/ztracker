@@ -11,6 +11,7 @@ import SwiftData
 import UserNotifications
 
 struct SettingsView: View {
+    @AppStorage("userThemeColor") private var userThemeColor: AppColor = .theme
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
@@ -41,7 +42,7 @@ struct SettingsView: View {
                 .frame(maxHeight: .infinity, alignment: .top)
             }
             #if os(iOS)
-            .background(MovingLinearGradient(selectedColor: .theme))
+            .background(MovingLinearGradient(selectedColor: userThemeColor.color))
             #endif
             
         }
@@ -50,17 +51,26 @@ struct SettingsView: View {
 }
 
 struct ThemeColorSection: View {
-    // TODO: attach settingsThemeColor to AppStorage
-    @AppStorage("settingsThemeColorHex") private var settingsThemeColorHex = "#007AFF"
-    @State private var settingsThemeColor: Color = .teal
+    @AppStorage("userThemeColor") private var userThemeColor: AppColor = .theme
     
     var body: some View {
-        VStack {
-            ColorPicker("Theme Color", selection: $settingsThemeColor, supportsOpacity: false)
+        HStack {
+            Text("Theme Color")
+            
+            Spacer()
+                        
+            Picker("Theme Color", selection: $userThemeColor) {
+                ForEach(AppColor.allCases, id: \.self) { id in
+                    Text(id.rawValue)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                        .tag(id)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .trailing)
         }
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
-        .glassEffect(in: .rect(cornerRadius: 16))
+        .glassEffect(.regular.tint(userThemeColor.color), in: .rect(cornerRadius: 16))
     }
 }
 
@@ -297,4 +307,3 @@ struct DebugSection: View {
             .modelContainer(container)
             
 }
-

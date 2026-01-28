@@ -9,6 +9,8 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
+    @AppStorage("userThemeColor") private var userThemeColor: AppColor = .theme
+    
     var body: some View {
         TabView() {
             Tab("Today", systemImage: "checklist") { TodayView() }
@@ -17,7 +19,7 @@ struct ContentView: View {
             Tab("Insights", systemImage: "chart.xyaxis.line") { InsightsView() }
             Tab("Settings", systemImage: "gear") { SettingsView() }
         }
-        .background(MovingLinearGradient(selectedColor: .theme))
+        .background(MovingLinearGradient(selectedColor: userThemeColor.color))
     }
 }
 

@@ -27,6 +27,8 @@ enum Timeframe: String, CaseIterable, Identifiable {
 }
 
 struct InsightsView: View {
+    @AppStorage("userThemeColor") private var userThemeColor: AppColor = .theme
+    
     
     @Query(filter: #Predicate<Habit> { !$0.isArchived },
            sort: \.sortIndex,
@@ -50,7 +52,7 @@ struct InsightsView: View {
                     .pickerStyle(.segmented)
                     .padding()
                     
-                    CompletionRateChart(habits: activeHabits, days: selectedTimeframe.days)
+                    CompletionRateChart(habits: activeHabits, days: selectedTimeframe.days, color: userThemeColor.color)
                         .padding(.horizontal)
                         .frame(height: 200)
                     
@@ -74,7 +76,7 @@ struct InsightsView: View {
                 }
             }
             #if os(iOS)
-            .background(MovingLinearGradient(selectedColor: .theme))
+            .background(MovingLinearGradient(selectedColor: userThemeColor.color))
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .navigationTitle("Insights")

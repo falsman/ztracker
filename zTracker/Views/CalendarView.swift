@@ -9,6 +9,8 @@ import SwiftUI
 import SwiftData
 
 struct CalendarView: View {
+    @AppStorage("userThemeColor") private var userThemeColor: AppColor = .theme
+    
     @Query(filter: #Predicate<Habit> { !$0.isArchived },
            sort: \.sortIndex,
            order: .forward
@@ -66,7 +68,7 @@ struct CalendarView: View {
             }
             
             #if os(iOS)
-            .background(MovingLinearGradient(selectedColor: .theme))
+            .background(MovingLinearGradient(selectedColor: userThemeColor.color))
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .navigationTitle("Calendar")

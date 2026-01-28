@@ -19,6 +19,7 @@ struct HabitsView: View {
     @Environment(\.modelContext) private var context
     
     @AppStorage("habitsTimeframe") private var summaryTimeframe: Timeframe = .week
+    @AppStorage("userThemeColor") private var userThemeColor: AppColor = .theme
     
     @Query(sort: \Habit.sortIndex) private var allHabits: [Habit]
 
@@ -75,7 +76,7 @@ struct HabitsView: View {
             min: 150, ideal: 200, max: 400)
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
-        .background(MovingLinearGradient(selectedColor: .theme))
+        .background(MovingLinearGradient(selectedColor: userThemeColor.color))
         #endif
         
         .toolbar {

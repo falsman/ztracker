@@ -12,6 +12,7 @@ import SwiftData
 struct CompletionRateChart: View {
     let habits: [Habit]
     let days: Int
+    let color: Color
     
     private var dailyCompletion: [(date: Date, rate: Double)] {
         let calendar = Calendar.current
@@ -53,12 +54,13 @@ struct CompletionRateChart: View {
                         x: .value("Date", data.date, unit: .day),
                         y: .value("Rate", data.rate)
                         )
-                    .foregroundStyle(.theme)
+                    .foregroundStyle(color)
                     
                     AreaMark(
                         x: .value("Date", data.date, unit: .day),
                         y: .value("Rate", data.rate)
                         )
+                    .foregroundStyle(color)
                     .opacity(0.3)
                 }
             }
@@ -108,7 +110,7 @@ struct CompletionRateChart: View {
     
     habits.forEach { container.mainContext.insert($0) }
     
-    return CompletionRateChart(habits: habits, days: 80)
+    return CompletionRateChart(habits: habits, days: 80, color: .teal)
         .modelContainer(container)
 }
 

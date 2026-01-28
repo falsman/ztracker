@@ -11,8 +11,8 @@ import SwiftData
 struct TodayView: View {
     @Environment(\.modelContext) private var context
     
-    @AppStorage("healthKitEnabled") private var healthKitEnabled = true
-    @AppStorage("userThemeColor") private var userThemeColor: AppColor = .theme
+    `@AppStorage`("healthKitEnabled") private var healthKitEnabled = false
+    `@AppStorage`("userThemeColor") private var userThemeColor: AppColor = .theme
     
     @Query(sort: \Habit.sortIndex) private var allHabits: [Habit]
     @Query(filter: #Predicate<Habit> { !$0.isArchived },

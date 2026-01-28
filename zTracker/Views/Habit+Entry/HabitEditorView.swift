@@ -132,7 +132,7 @@ struct HabitEditorView: View {
         switch selectedType {
         case .boolean: selectedType = .boolean(goal: goalToSave)
         case .duration: selectedType = .duration(goal: goalToSave)
-        case .rating: selectedType = .rating(min: ratingMin ?? 0, max: ratingMax ?? 5, goal: goalToSave)
+        case .rating: selectedType = .rating(min: ratingMin ?? 1, max: ratingMax ?? 5, goal: goalToSave)
         case .numeric: selectedType = .numeric(min: numericMin ?? 0, max: numericMax ?? 100, unit: numericUnit.trimmingCharacters(in: .whitespacesAndNewlines), goal: goalToSave)
         }
         
@@ -186,7 +186,7 @@ struct BasicInfoSection: View {
             Picker("Habit Type", selection: $selectedType) {
                 Text("Checkmark").tag(HabitType.boolean(goal: goal))
                 Text("Duration").tag(HabitType.duration(goal: goal))
-                Text("Rating").tag(HabitType.rating(min: ratingMin ?? 0, max: ratingMax ?? 5, goal: goal))
+                Text("Rating").tag(HabitType.rating(min: ratingMin ?? 1, max: ratingMax ?? 5, goal: goal))
                 Text("Number").tag(HabitType.numeric(min: numericMin ?? 0, max: numericMax ?? 100, unit: numericUnit, goal: goal))
             }
             .frame(maxWidth: .infinity, alignment: .leading)

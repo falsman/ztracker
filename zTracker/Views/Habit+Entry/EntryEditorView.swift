@@ -202,10 +202,10 @@ struct EntryEditorView: View {
         VStack {
             DatePicker("Duration", selection: Binding(
                         get: {
-                            Date(timeInterval: TimeInterval(timeDurationSeconds ?? 0), since: unixEpoch)
+                            Date(timeInterval: TimeInterval(timeDurationSeconds ?? 0), since: today)
                         },
                         set: { newDate in
-                            timeDurationSeconds = Int64(newDate.timeIntervalSince(unixEpoch))
+                            timeDurationSeconds = Int64(newDate.timeIntervalSince(today))
                         }
                        ), displayedComponents: .hourAndMinute)
             .labelsHidden()

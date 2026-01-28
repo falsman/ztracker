@@ -60,6 +60,7 @@ struct CompletionRateChart: View {
                         x: .value("Date", data.date, unit: .day),
                         y: .value("Rate", data.rate)
                         )
+                    .foregroundStyle(color)
                     .opacity(0.3)
                 }
             }

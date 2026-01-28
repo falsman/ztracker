@@ -68,7 +68,7 @@ struct HabitEditorView: View {
                     .glassEffect(in: .rect(cornerRadius: 16))
                     .padding(.horizontal)
                 
-                GoalsSection(userGoalState: $goalToSave.state, goalTarget: $goalToSave.target, goalFrequency: $goalToSave.frequency, selectedType: $selectedType)
+                GoalsSection(goalState: $goalToSave.state, goalTarget: $goalToSave.target, goalFrequency: $goalToSave.frequency, selectedType: $selectedType)
                     .glassEffect(in: .rect(cornerRadius: 16))
                     .padding(.horizontal)
 
@@ -307,7 +307,7 @@ struct AppearanceSection: View {
 }
 
 struct GoalsSection: View {
-    @Binding var userGoalState: Bool
+    @Binding var goalState: Bool
     @Binding var goalTarget: Double
     @Binding var goalFrequency: HabitGoal.Frequency
     @Binding var selectedType: HabitType
@@ -316,9 +316,12 @@ struct GoalsSection: View {
     
     var body: some View {
         VStack {
-            Toggle("Set Goal", isOn: $userGoalState)
+            Toggle("Set Goal", isOn: $goalState)
+                .onChange(of: goalState) {
+                    if !goalState { goalTarget = 1; goalFrequency = .daily }
+                }
             
-            if userGoalState {
+            if goalState {
                 HStack {
                     if case .duration = selectedType {
                         DatePicker("Goal Duration",

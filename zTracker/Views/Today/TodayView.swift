@@ -11,7 +11,8 @@ import SwiftData
 struct TodayView: View {
     @Environment(\.modelContext) private var context
     
-    @AppStorage("healthKitEnabled") var healthKitEnabled = true
+    @AppStorage("healthKitEnabled") private var healthKitEnabled = true
+    @AppStorage("userThemeColor") private var userThemeColor: AppColor = .theme
     
     @Query(sort: \Habit.sortIndex) private var allHabits: [Habit]
     @Query(filter: #Predicate<Habit> { !$0.isArchived },
@@ -47,7 +48,7 @@ struct TodayView: View {
             }
             
             #if os(iOS)
-            .background(MovingLinearGradient(selectedColor: .theme))
+            .background(MovingLinearGradient(selectedColor: userThemeColor.color))
             .navigationBarTitleDisplayMode(.inline)
             .navigationTitle(Text(.now, style: .date))
             .navigationSubtitle(currentTime)

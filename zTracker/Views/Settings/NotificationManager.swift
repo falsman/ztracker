@@ -53,7 +53,6 @@ final class DefaultNotificationsActionHandler: NotificationsActionHandler {
         intent.date = today
         do {
             _ = try intent.perform()
-            await NotificationsManager.shared.cancelHabitFollowupReminders(habitID: habit.id)
         } catch { print("Could not handle boolean log for '\(habit.title)': \(error)") }
     }
     
@@ -64,7 +63,6 @@ final class DefaultNotificationsActionHandler: NotificationsActionHandler {
         intent.date = today
         do {
             _ = try intent.perform()
-            await NotificationsManager.shared.cancelHabitFollowupReminders(habitID: habit.id)
         } catch { print("Could not handle numeric log for '\(habit.title)': \(error)") }
     }
     
@@ -75,7 +73,6 @@ final class DefaultNotificationsActionHandler: NotificationsActionHandler {
         intent.date = today
         do {
             _ = try intent.perform()
-            await NotificationsManager.shared.cancelHabitFollowupReminders(habitID: habit.id)
         } catch { print("Could not handle rating log for '\(habit.title)': \(error)") }
     }
     
@@ -193,19 +190,8 @@ final class NotificationsManager {
             options: [.customDismissAction]
         )
 
-        let summaryCategory = UNNotificationCategory(
-            identifier: "habit.dailySummary",
-            actions: [
-                UNNotificationAction(identifier: "action.open",
-                                     title: NSLocalizedString("Review", comment: "Open to review remaining"),
-                                     options: [.foreground])
-            ],
-            intentIdentifiers: [],
-            options: []
-        )
-
         UNUserNotificationCenter.current().setNotificationCategories(
-            [booleanCategory, ratingCategory, numericCategory, durationCategory, summaryCategory]
+            [booleanCategory, ratingCategory, numericCategory, durationCategory]
         )
     }
 
@@ -235,18 +221,15 @@ final class NotificationsManager {
         guard habit.reminder != nil else { return }
 
         let dateComponents = Calendar.current.dateComponents([.hour, .minute], from: habit.reminder!)
-        let content = makeHabitNotificationContent(habitID: habit.id, title: habit.title, type: habit.type, isFollowUp: false)
+        let content = makeHabitNotificationContent(habitID: habit.id, title: habit.title, type: habit.type)
         let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
 
-        let requestID = makeRequestIdentifier(habitID: habit.id, isFollowUp: false)
+        let requestID = makeRequestIdentifier(habitID: habit.id)
         let request = UNNotificationRequest(identifier: requestID, content: content, trigger: trigger)
 
         do {
             try await UNUserNotificationCenter.current().add(request)
         } catch { print("Error scheduling notification: \(error)") }
-
-        // schedule a one-off follow-up for the next occurrence + 30 minutes.
-        await scheduleNextOccurrenceFollowUp(habit: habit)
     }
 
     func cancelHabitReminders(habitID: UUID) async {
@@ -257,108 +240,13 @@ final class NotificationsManager {
         print("Removed habit reminders")
     }
 
-    func cancelHabitFollowupReminders(habitID: UUID) async {
-        let center = UNUserNotificationCenter.current()
-        let followPrefix = "habit.\(habitID.uuidString).followup"
-        await center.removePendingNotificationRequests(withIdentifiersMatchingPrefix: followPrefix)
-        print("Removed follow-up reminders")
-    }
-
-    
-    
-    /// Schedules a 30-minute follow-up notification if the habit is not yet logged (triggered relative to now).
-    func scheduleFollowUpIfNeeded(habitID: UUID, title: String, type: HabitType, originalRequestID: String) async {
-        guard let handler = self.actionHandler else { return }
-        let isLogged = await handler.isHabitLoggedToday(habitID: habitID)
-        guard !isLogged else { return }
-
-        let content = makeHabitNotificationContent(habitID: habitID, title: title, type: type, isFollowUp: true)
-
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 30 * 60, repeats: false)
-        let followUpID = makeFollowUpRequestIdentifier(habitID: habitID, originalRequestID: originalRequestID)
-
-        let request = UNNotificationRequest(identifier: followUpID, content: content, trigger: trigger)
-        do {
-            try await UNUserNotificationCenter.current().add(request)
-        } catch { print("Error scheduling follow-up: \(error)") }
-    }
-
-    /// Computes next occurrence of the given time-of-day and schedules a one-off follow-up at +30m.
-    private func scheduleNextOccurrenceFollowUp(habit: Habit) async {
-        // Cancel previously planned follow-ups for this habit
-        await cancelHabitFollowupReminders(habitID: habit.id)
-
-        let cal = Calendar.current
-        var comps = cal.dateComponents([.hour, .minute], from: habit.reminder ?? .now)
-        let todayComps = cal.dateComponents([.year, .month, .day], from: .now)
-        comps.year = todayComps.year
-        comps.month = todayComps.month
-        comps.day = todayComps.day
-
-        var next = cal.date(from: comps) ?? .now
-        if next <= .now {
-            next = cal.date(byAdding: .day, value: 1, to: next) ?? .now
-        }
-        guard let followDate = cal.date(byAdding: .minute, value: 30, to: next) else { return }
-
-        let content = makeHabitNotificationContent(habitID: habit.id, title: habit.title, type: habit.type, isFollowUp: true)
-        let interval = max(1, followDate.timeIntervalSinceNow)
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: false)
-        let id = "habit.\(habit.id.uuidString).followup.\(UUID().uuidString)"
-        let req = UNNotificationRequest(identifier: id, content: content, trigger: trigger)
-        
-        do {
-            try await UNUserNotificationCenter.current().add(req)
-        } catch { print("Error scheduling next occurance follow up: \(error)")}
-    }
-
-    // MARK: - Scheduling (Daily Summary)
-
-    /// Schedules or updates the daily summary notification at a specific time of day.
-    func scheduleDailySummary(at time: Date) async {
-        await cancelDailySummary()
-
-        let comps = Calendar.current.dateComponents([.hour, .minute], from: time)
-        let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: true)
-
-        let content = UNMutableNotificationContent()
-        content.categoryIdentifier = "habit.dailySummary"
-        content.threadIdentifier = "summary.daily"
-//        content.summaryArgument = NSLocalizedString("Habits", comment: "Summary argument")
-//        content.summaryArgumentCount = 1
-
-        if let count = try? await remainingCount() {
-            content.title = NSLocalizedString("Daily Summary", comment: "Daily summary title")
-            // Consider adding a .stringsdict for proper pluralization
-            content.body = String(format: NSLocalizedString("You have %d habits remaining today.", comment: "Daily summary body"), count)
-        } else {
-            content.title = NSLocalizedString("Daily Summary", comment: "Daily summary title")
-            content.body = NSLocalizedString("Check your habits for today.", comment: "Fallback summary body")
-        }
-
-        let request = UNNotificationRequest(identifier: "summary.daily", content: content, trigger: trigger)
-        do {
-            try await UNUserNotificationCenter.current().add(request)
-        } catch { print("Error scheduling daily summary: \(error)") }
-    }
-
-    /// Cancels the scheduled daily summary notification.
-    func cancelDailySummary() async {
-        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["summary.daily"])
-        UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: ["summary.daily"])
-    }
-
     // MARK: - Content Builders
 
-    private func makeHabitNotificationContent(habitID: UUID, title: String, type: HabitType, isFollowUp: Bool) -> UNMutableNotificationContent {
+    private func makeHabitNotificationContent(habitID: UUID, title: String, type: HabitType) -> UNMutableNotificationContent {
         let content = UNMutableNotificationContent()
         content.title = title
-        content.body = makeBody(for: type, isFollowUp: isFollowUp)
+        content.body = makeBody(for: type)
         content.sound = .default
-
-        if isFollowUp {
-            content.interruptionLevel = .timeSensitive
-        }
 
         content.categoryIdentifier = categoryIdentifier(for: type)
 
@@ -371,29 +259,20 @@ final class NotificationsManager {
 
         // Store only property list types in userInfo
         content.userInfo["habitID"] = habitID.uuidString
-        content.userInfo["isFollowUp"] = isFollowUp
 
         return content
     }
 
-    private func makeBody(for type: HabitType, isFollowUp: Bool) -> String {
+    private func makeBody(for type: HabitType) -> String {
         switch type {
         case .boolean:
-            return isFollowUp
-            ? NSLocalizedString("Still not logged. Mark it complete?", comment: "Follow-up boolean")
-            : NSLocalizedString("Time to check this off.", comment: "Initial boolean")
+            return NSLocalizedString("Time to check this off.", comment: "Initial boolean")
         case .duration:
-            return isFollowUp
-            ? NSLocalizedString("Still not logged. Open to log your time.", comment: "Follow-up duration")
-            : NSLocalizedString("Open to log your time.", comment: "Initial duration")
+            return NSLocalizedString("Open to log your time.", comment: "Initial duration")
         case .rating:
-            return isFollowUp
-            ? NSLocalizedString("Still not logged. Enter a rating.", comment: "Follow-up rating")
-            : NSLocalizedString("Enter a quick rating.", comment: "Initial rating")
+            return NSLocalizedString("Enter a quick rating.", comment: "Initial rating")
         case .numeric:
-            return isFollowUp
-            ? NSLocalizedString("Still not logged. Enter a value.", comment: "Follow-up numeric")
-            : NSLocalizedString("Enter a quick value.", comment: "Initial numeric")
+            return NSLocalizedString("Enter a quick value.", comment: "Initial numeric")
         }
     }
 
@@ -408,22 +287,9 @@ final class NotificationsManager {
 
     // MARK: - Identifiers
 
-    private func makeRequestIdentifier(habitID: UUID, isFollowUp: Bool) -> String {
+    private func makeRequestIdentifier(habitID: UUID) -> String {
         let base = "habit.\(habitID.uuidString)"
-        return isFollowUp ? "\(base).followup" : base
-    }
-
-    private func makeFollowUpRequestIdentifier(habitID: UUID, originalRequestID: String) -> String {
-        "habit.\(habitID.uuidString).followup.\(originalRequestID).\(UUID().uuidString)"
-    }
-
-    // MARK: - Helpers
-
-    private func remainingCount() async throws -> Int {
-        if let handler = self.actionHandler {
-            return await handler.remainingHabitsCountToday()
-        }
-        return 0
+        return base
     }
 }
 
@@ -458,7 +324,6 @@ final class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
                                 didReceive response: UNNotificationResponse) async {
         let userInfo = response.notification.request.content.userInfo
         let habitIDString = userInfo["habitID"] as? String
-        let isFollowUp = (userInfo["isFollowUp"] as? Bool) ?? false
 
         guard let habitIDString, let habitID = UUID(uuidString: habitIDString) else { return }
 
@@ -497,16 +362,5 @@ final class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
         default:
             break
         }
-
-        // If this was the initial reminder (not a follow-up), set up a conditional follow-up in 30 minutes.
-        if !isFollowUp {
-            await NotificationsManager.shared.scheduleFollowUpIfNeeded(
-                habitID: habit.id,
-                title: habit.title,
-                type: habit.type,
-                originalRequestID: response.notification.request.identifier
-            )
-        }
     }
 }
-

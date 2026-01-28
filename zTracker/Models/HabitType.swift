@@ -10,8 +10,8 @@ struct HabitGoal: Codable, Hashable {
         case daily, weekly, monthly
     }
     
-    var target: Double  // For Duration (seconds), Numeric (value), Boolean/Rating (count)
-    var frequency: Frequency
+    var target: Double = 1
+    var frequency: Frequency = .daily
     var state: Bool = false
 }
 

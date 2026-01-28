@@ -318,7 +318,11 @@ struct GoalsSection: View {
         VStack {
             Toggle("Set Goal", isOn: $goalState)
                 .onChange(of: goalState) {
-                    if !goalState { goalTarget = 1; goalFrequency = .daily }
+                   if !goalState {
+                   let defaults = HabitGoal()
+                   goalTarget = defaults.target
+                   goalFrequency = defaults.frequency
+               }
                 }
             
             if goalState {

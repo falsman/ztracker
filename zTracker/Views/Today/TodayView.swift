@@ -61,7 +61,7 @@ struct TodayView: View {
                     } label: { Label("Sync Health Data", systemImage: "arrow.down.heart.fill") }
                         .tint(.red.opacity(0.75))
                         .buttonStyle(.glassProminent)
-                        .disabled(healthKitEnabled == false)
+                        .disabled(!healthKitEnabled)
                 }
             }
             #endif

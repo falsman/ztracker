@@ -209,7 +209,9 @@ struct EntryEditorView: View {
                         }
                        ), displayedComponents: .hourAndMinute)
             .labelsHidden()
+            #if os(iOS)
             .datePickerStyle(.wheel)
+            #endif
         }
         .frame(maxWidth: .infinity)
     }

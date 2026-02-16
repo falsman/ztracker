@@ -50,16 +50,26 @@ struct EntryEditorView: View {
 
                     #endif
                         
-                    dateSection
+                    VStack {
+                        Text(date.formatted(date: .abbreviated, time: .omitted))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .padding()
                         .glassEffect(in: .rect(cornerRadius: 16))
                         .glassEffect(in: .rect(cornerRadius: 16))
                         .padding(.horizontal)
                     
-                    metricSection
+                    MetricEntrySection(completed: $completed, timeDurationSeconds: $timeDurationSeconds, ratingValue: $ratingValue, numericValue: $numericValue, minMaxError: $minMaxError, habit: habit)
                         .glassEffect(in: .rect(cornerRadius: 16))
                         .padding(.horizontal)
                     
-                    noteSection
+                    VStack {
+                        TextField("Note", text: $note, axis: .vertical)
+                            .scrollContentBackground(.hidden)
+                            .autocorrectionDisabled(false)
+                            .lineLimit(1...3)
+                        }
+                        .padding()
                         .glassEffect(in: .rect(cornerRadius: 16))
                         .padding([.bottom, .horizontal])
                     
@@ -93,51 +103,6 @@ struct EntryEditorView: View {
             .tint(habit.swiftUIColor)
             .onAppear { loadEntry() }
         }
-    }
-    
-    private var dateSection: some View {
-        VStack {
-            Text(date.formatted(date: .abbreviated, time: .omitted))
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .padding()
-    }
-    
-    private var metricSection: some View {
-        VStack {
-            switch habit.type {
-            case .boolean(_):
-                Toggle(isOn: $completed) {
-                    Label(
-                        completed ? "Completed" : "Mark Completed",
-                        systemImage: completed ? "checkmark.circle.dotted" : "circle.dotted"
-                    )
-                }
-                    .toggleStyle(.button)
-                    .frame(maxWidth: .infinity)
-
-            case .duration(_):
-                durationPicker()
-
-            case .rating(let min, let max, _):
-                ratingPicker(min: min, max: max)
-
-            case .numeric(let min, let max, let unit, _):
-                numericPicker(min: min, max: max, unit: unit)
-            }
-            
-        }
-        .padding(.vertical)
-    }
-    
-    private var noteSection: some View {
-        VStack {
-            TextField("Note", text: $note, axis: .vertical)
-                .scrollContentBackground(.hidden)
-                .autocorrectionDisabled(false)
-                .lineLimit(1...3)
-        }
-        .padding()
     }
 
     
@@ -180,6 +145,45 @@ struct EntryEditorView: View {
             
                 dismiss()
         }
+    }
+
+}
+
+struct MetricEntrySection: View {
+    @Binding var completed: Bool
+    @Binding var timeDurationSeconds: Int64?
+    @Binding var ratingValue: Int?
+    @Binding var numericValue: Double?
+    
+    @Binding var minMaxError: Bool
+    
+    let habit: Habit
+    
+    var body: some View {
+        VStack {
+            switch habit.type {
+            case .boolean(_):
+                Toggle(isOn: $completed) {
+                    Label(
+                        completed ? "Completed" : "Mark Completed",
+                        systemImage: completed ? "checkmark.circle.dotted" : "circle.dotted"
+                    )
+                }
+                .toggleStyle(.button)
+                .frame(maxWidth: .infinity)
+                
+            case .duration(_):
+                durationPicker()
+                
+            case .rating(let min, let max, _):
+                ratingPicker(min: min, max: max)
+                
+            case .numeric(let min, let max, let unit, _):
+                numericPicker(min: min, max: max, unit: unit)
+            }
+            
+        }
+        .padding(.vertical)
     }
     
     private func ratingPicker(min: Int, max: Int) -> some View {
@@ -244,7 +248,7 @@ struct EntryEditorView: View {
         if let numericValue = numericValue, (numericValue < min || numericValue > max) { minMaxError = true }
         else { minMaxError = false }
     }
-
+    
 }
 
 #Preview("Sheet View") {

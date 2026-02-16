@@ -16,6 +16,9 @@ struct ContentView: View {
             Tab("Today", systemImage: "checklist") { TodayView() }
             Tab("Habits", systemImage: "square.grid.2x2") { HabitsView() }
             Tab("Calendar", systemImage: "calendar") { CalendarView() }
+            #if os(macOS)
+            Tab("Table", systemImage: "tablecells") { TableView() }
+            #endif
             Tab("Insights", systemImage: "chart.xyaxis.line") { InsightsView() }
             Tab("Settings", systemImage: "gear") { SettingsView() }
         }
